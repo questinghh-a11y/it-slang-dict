@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import os
 import json
+import csv
+import io
 import random
 import secrets
 import smtplib
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr
@@ -20,13 +22,14 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import (FastAPI, HTTPException, Query, Depends, Header,
-                     BackgroundTasks)
+                     BackgroundTasks, Request)
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy import (create_engine, Column, Integer, String, Text,
-                        Boolean, DateTime, ForeignKey, func, or_, text,
-                        inspect)
+                        Boolean, DateTime, ForeignKey, func, or_, and_,
+                        text, inspect)
 from sqlalchemy.orm import (declarative_base, sessionmaker, Session,
                             relationship)
 from passlib.hash import pbkdf2_sha256
@@ -88,13 +91,17 @@ class EditLog(Base):
     __tablename__ = "edit_log"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=True)
-    username = Column(String(50), nullable=False)
-    action = Column(String(30), nullable=False)
+    username = Column(String(50), nullable=False, index=True)
+    action = Column(String(30), nullable=False, index=True)
     target_type = Column(String(20), nullable=False)
     target_id = Column(Integer, nullable=True)
     target_name = Column(String(200), nullable=True)
     details = Column(Text, nullable=True)
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    ip_address = Column(String(64), nullable=True)
+    user_agent = Column(String(300), nullable=True)
+    session_ref = Column(String(12), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow,
+                        index=True)
 
 
 Base.metadata.create_all(engine)
@@ -102,14 +109,24 @@ Base.metadata.create_all(engine)
 
 # ---------------- миграция ----------------
 def migrate():
-    """Добавляет новые колонки в существующие таблицы, если их нет."""
     inspector = inspect(engine)
-    if "users" not in inspector.get_table_names():
-        return
-    cols = {c["name"] for c in inspector.get_columns("users")}
-    with engine.begin() as conn:
-        if "email" not in cols:
-            conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(150)"))
+    tables = inspector.get_table_names()
+
+    if "users" in tables:
+        cols = {c["name"] for c in inspector.get_columns("users")}
+        with engine.begin() as conn:
+            if "email" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(150)"))
+
+    if "edit_log" in tables:
+        cols = {c["name"] for c in inspector.get_columns("edit_log")}
+        with engine.begin() as conn:
+            if "ip_address" not in cols:
+                conn.execute(text("ALTER TABLE edit_log ADD COLUMN ip_address VARCHAR(64)"))
+            if "user_agent" not in cols:
+                conn.execute(text("ALTER TABLE edit_log ADD COLUMN user_agent VARCHAR(300)"))
+            if "session_ref" not in cols:
+                conn.execute(text("ALTER TABLE edit_log ADD COLUMN session_ref VARCHAR(12)"))
 
 
 migrate()
@@ -131,7 +148,6 @@ def smtp_configured() -> bool:
 
 def send_email(to_email: str, subject: str, body_text: str,
                body_html: Optional[str] = None) -> bool:
-    """Отправляет письмо. Возвращает True при успехе."""
     if not smtp_configured():
         print("[smtp] не настроен, письмо не отправлено")
         return False
@@ -163,14 +179,12 @@ def send_email(to_email: str, subject: str, body_text: str,
 def render_welcome(username: str):
     subject = "Добро пожаловать в Словарь ИТ-сленга"
     text = (f"Привет, {username}!\n\n"
-            f"Твой аккаунт создан. Теперь ты можешь добавлять термины "
-            f"и предлагать правки.\n\n"
-            f"— Словарь ИТ-сленга")
+            f"Твой аккаунт создан.\n\n— Словарь ИТ-сленга")
     html = f"""<!doctype html>
 <html><body style="font-family:sans-serif;background:#0f1117;color:#e6e9ef;padding:24px">
 <div style="max-width:520px;margin:auto;background:#171a23;border-radius:16px;padding:28px;border:1px solid #2a2f3d">
 <h2 style="color:#22d3ee;margin:0 0 16px">Привет, {username}!</h2>
-<p style="line-height:1.6;color:#cdd3e0">Твой аккаунт создан. Теперь ты можешь добавлять термины и предлагать правки.</p>
+<p style="line-height:1.6;color:#cdd3e0">Твой аккаунт создан.</p>
 <p style="color:#8b93a7;font-size:13px;margin-top:24px">— Словарь ИТ-сленга</p>
 </div></body></html>"""
     return subject, text, html
@@ -188,10 +202,29 @@ def verify_password(pw: str, hashed: str) -> bool:
         return False
 
 
+def client_info(request: Optional[Request]) -> tuple[Optional[str], Optional[str]]:
+    """Достаёт IP и User-Agent из запроса."""
+    if request is None:
+        return None, None
+    ip = None
+    ua = request.headers.get("user-agent")
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        ip = forwarded.split(",")[0].strip()
+    elif request.client:
+        ip = request.client.host
+    if ua and len(ua) > 300:
+        ua = ua[:297] + "..."
+    return ip, ua
+
+
 def log_action(db: Session, user, action: str, target_type: str,
                target_id: Optional[int] = None,
                target_name: Optional[str] = None,
-               details: Optional[str] = None):
+               details: Optional[str] = None,
+               request: Optional[Request] = None,
+               session_ref: Optional[str] = None):
+    ip, ua = client_info(request)
     db.add(EditLog(
         user_id=user.id if user else None,
         username=user.username if user else "guest",
@@ -200,6 +233,9 @@ def log_action(db: Session, user, action: str, target_type: str,
         target_id=target_id,
         target_name=target_name,
         details=details,
+        ip_address=ip,
+        user_agent=ua,
+        session_ref=session_ref,
     ))
 
 
@@ -294,7 +330,7 @@ class TermOut(TermBase):
 
 
 # ---------------- приложение ----------------
-app = FastAPI(title="IT Slang Dictionary API", version="3.1.0")
+app = FastAPI(title="IT Slang Dictionary API", version="4.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -305,7 +341,7 @@ app.add_middleware(
 # ---------------- auth ----------------
 @app.post("/api/auth/register", response_model=UserOut, status_code=201)
 def register(payload: RegisterIn, background: BackgroundTasks,
-             db: Session = Depends(get_db)):
+             request: Request, db: Session = Depends(get_db)):
     exists = (db.query(User)
                 .filter(func.lower(User.username) == payload.username.lower())
                 .first())
@@ -322,36 +358,50 @@ def register(payload: RegisterIn, background: BackgroundTasks,
     db.commit()
     db.refresh(user)
 
-    log_action(db, user, "register", "user", user.id, user.username)
+    log_action(db, user, "register", "user", user.id, user.username,
+               details=json.dumps({"email": bool(user.email)}, ensure_ascii=False),
+               request=request)
     db.commit()
 
     if user.email and smtp_configured():
-        subject, text, html = render_welcome(user.username)
-        background.add_task(send_email, user.email, subject, text, html)
+        subject, text_body, html = render_welcome(user.username)
+        background.add_task(send_email, user.email, subject, text_body, html)
 
     return user
 
 
 @app.post("/api/auth/login")
-def login(payload: LoginIn, db: Session = Depends(get_db)):
+def login(payload: LoginIn, request: Request, db: Session = Depends(get_db)):
     user = (db.query(User)
               .filter(func.lower(User.username) == payload.username.lower())
               .first())
+
     if not user or not verify_password(payload.password, user.password_hash):
+        # логируем неудачную попытку, без user_id
+        fake = type("U", (), {"id": None, "username": payload.username})()
+        log_action(db, fake, "login_failed", "user", None, payload.username,
+                   details="неверное имя или пароль", request=request)
+        db.commit()
         raise HTTPException(401, "Неверное имя или пароль")
+
     token = secrets.token_urlsafe(32)
     db.add(SessionToken(token=token, user_id=user.id))
-    log_action(db, user, "login", "user", user.id, user.username)
+    log_action(db, user, "login", "user", user.id, user.username,
+               session_ref=token[:8], request=request)
     db.commit()
     return {"token": token, "user": UserOut.model_validate(user).model_dump()}
 
 
 @app.post("/api/auth/logout", status_code=204)
 def logout(x_session_token: Optional[str] = Header(None),
+           request: Request = None,
            db: Session = Depends(get_db)):
     if x_session_token:
         sess = db.get(SessionToken, x_session_token)
         if sess:
+            user = sess.user
+            log_action(db, user, "logout", "user", user.id, user.username,
+                       session_ref=x_session_token[:8], request=request)
             db.delete(sess)
             db.commit()
 
@@ -368,8 +418,10 @@ def get_profile(user: User = Depends(require_user)):
 
 @app.put("/api/auth/profile", response_model=UserOut)
 def update_profile(payload: ProfileIn,
+                   request: Request,
                    db: Session = Depends(get_db),
-                   user: User = Depends(require_user)):
+                   user: User = Depends(require_user),
+                   x_session_token: Optional[str] = Header(None)):
     changes = {}
     data = payload.model_dump(exclude_unset=True)
 
@@ -383,7 +435,9 @@ def update_profile(payload: ProfileIn,
         db.commit()
         db.refresh(user)
         log_action(db, user, "update_profile", "user", user.id, user.username,
-                   json.dumps(changes, ensure_ascii=False))
+                   details=json.dumps(changes, ensure_ascii=False),
+                   request=request,
+                   session_ref=x_session_token[:8] if x_session_token else None)
         db.commit()
 
     return user
@@ -397,8 +451,10 @@ def list_users(db: Session = Depends(get_db), _: User = Depends(require_admin)):
 
 @app.put("/api/users/{user_id}/role", response_model=UserOut)
 def change_role(user_id: int, payload: RoleIn,
+                request: Request,
                 db: Session = Depends(get_db),
-                admin: User = Depends(require_admin)):
+                admin: User = Depends(require_admin),
+                x_session_token: Optional[str] = Header(None)):
     if payload.role not in ("admin", "user"):
         raise HTTPException(400, "Роль: 'admin' или 'user'")
     u = db.get(User, user_id)
@@ -411,20 +467,55 @@ def change_role(user_id: int, payload: RoleIn,
     db.commit()
     db.refresh(u)
     log_action(db, admin, "change_role", "user", u.id, u.username,
-               json.dumps({"from": old, "to": u.role}, ensure_ascii=False))
+               details=json.dumps({"from": old, "to": u.role}, ensure_ascii=False),
+               request=request,
+               session_ref=x_session_token[:8] if x_session_token else None)
     db.commit()
     return u
 
 
-# ---------------- logs (admin) ----------------
+# ---------------- logs ----------------
 @app.get("/api/logs")
-def list_logs(limit: int = Query(300, ge=1, le=1000),
-              db: Session = Depends(get_db),
-              _: User = Depends(require_admin)):
-    rows = (db.query(EditLog)
-              .order_by(EditLog.created_at.desc())
-              .limit(limit).all())
-    return [{
+def list_logs(
+    username: Optional[str] = Query(None),
+    action: Optional[str] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=300),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    """Админ видит все записи, обычный пользователь — только свои."""
+    q = db.query(EditLog)
+
+    if user.role != "admin":
+        q = q.filter(EditLog.user_id == user.id)
+    elif username:
+        q = q.filter(EditLog.username == username)
+
+    if action:
+        q = q.filter(EditLog.action == action)
+
+    if date_from:
+        try:
+            dt = datetime.fromisoformat(date_from)
+            q = q.filter(EditLog.created_at >= dt)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            dt = datetime.fromisoformat(date_to) + timedelta(days=1)
+            q = q.filter(EditLog.created_at < dt)
+        except ValueError:
+            pass
+
+    total = q.count()
+    rows = (q.order_by(EditLog.created_at.desc())
+              .offset(offset).limit(limit).all())
+
+    items = [{
         "id": r.id,
         "username": r.username,
         "action": r.action,
@@ -432,8 +523,86 @@ def list_logs(limit: int = Query(300, ge=1, le=1000),
         "target_id": r.target_id,
         "target_name": r.target_name,
         "details": r.details,
+        "ip_address": r.ip_address,
+        "user_agent": r.user_agent,
+        "session_ref": r.session_ref,
         "created_at": r.created_at.isoformat(),
     } for r in rows]
+
+    return {"total": total, "limit": limit, "offset": offset, "items": items}
+
+
+@app.get("/api/logs/actions")
+def list_log_actions(db: Session = Depends(get_db),
+                     _: User = Depends(require_user)):
+    """Список типов действий для фильтра."""
+    rows = db.query(EditLog.action).distinct().all()
+    return sorted({r[0] for r in rows})
+
+
+@app.get("/api/logs/export")
+def export_logs(
+    username: Optional[str] = Query(None),
+    action: Optional[str] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_user),
+):
+    """Выгрузка журнала в CSV с учётом прав."""
+    q = db.query(EditLog)
+
+    if user.role != "admin":
+        q = q.filter(EditLog.user_id == user.id)
+    elif username:
+        q = q.filter(EditLog.username == username)
+
+    if action:
+        q = q.filter(EditLog.action == action)
+
+    if date_from:
+        try:
+            dt = datetime.fromisoformat(date_from)
+            q = q.filter(EditLog.created_at >= dt)
+        except ValueError:
+            pass
+
+    if date_to:
+        try:
+            dt = datetime.fromisoformat(date_to) + timedelta(days=1)
+            q = q.filter(EditLog.created_at < dt)
+        except ValueError:
+            pass
+
+    rows = q.order_by(EditLog.created_at.desc()).all()
+
+    buf = io.StringIO()
+    buf.write("\ufeff")  # BOM для Excel
+    w = csv.writer(buf, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+    w.writerow(["id", "дата", "пользователь", "действие",
+                "тип объекта", "id объекта", "объект",
+                "ip", "браузер", "детали"])
+    for r in rows:
+        w.writerow([
+            r.id,
+            r.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            r.username,
+            r.action,
+            r.target_type,
+            r.target_id or "",
+            r.target_name or "",
+            r.ip_address or "",
+            r.user_agent or "",
+            r.details or "",
+        ])
+
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition":
+                 f'attachment; filename="logs_{datetime.utcnow():%Y%m%d_%H%M}.csv"'},
+    )
 
 
 # ---------------- terms ----------------
@@ -472,8 +641,10 @@ def get_term(term_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/terms", response_model=TermOut, status_code=201)
 def create_term(payload: TermCreate,
+                request: Request,
                 db: Session = Depends(get_db),
-                user: User = Depends(require_user)):
+                admin: User = Depends(require_admin),
+                x_session_token: Optional[str] = Header(None)):
     exists = (db.query(Term)
                 .filter(func.lower(Term.term) == payload.term.lower())
                 .first())
@@ -481,25 +652,27 @@ def create_term(payload: TermCreate,
         raise HTTPException(409, "Такой термин уже есть")
     t = Term(term=payload.term, definition=payload.definition,
              example=payload.example, category=payload.category,
-             created_by_id=user.id, created_by=user.username)
+             created_by_id=admin.id, created_by=admin.username)
     db.add(t)
     db.commit()
     db.refresh(t)
-    log_action(db, user, "create", "term", t.id, t.term,
-               json.dumps({"category": t.category}, ensure_ascii=False))
+    log_action(db, admin, "create", "term", t.id, t.term,
+               details=json.dumps({"category": t.category}, ensure_ascii=False),
+               request=request,
+               session_ref=x_session_token[:8] if x_session_token else None)
     db.commit()
     return t
 
 
 @app.put("/api/terms/{term_id}", response_model=TermOut)
 def update_term(term_id: int, payload: TermUpdate,
+                request: Request,
                 db: Session = Depends(get_db),
-                user: User = Depends(require_user)):
+                admin: User = Depends(require_admin),
+                x_session_token: Optional[str] = Header(None)):
     t = db.get(Term, term_id)
     if not t:
         raise HTTPException(404, "Термин не найден")
-    if user.role != "admin" and t.created_by_id != user.id:
-        raise HTTPException(403, "Можно править только свои термины")
     data = payload.model_dump(exclude_unset=True)
     if "term" in data:
         clash = (db.query(Term)
@@ -516,25 +689,29 @@ def update_term(term_id: int, payload: TermUpdate,
     if changes:
         db.commit()
         db.refresh(t)
-        log_action(db, user, "update", "term", t.id, t.term,
-                   json.dumps(changes, ensure_ascii=False))
+        log_action(db, admin, "update", "term", t.id, t.term,
+                   details=json.dumps(changes, ensure_ascii=False),
+                   request=request,
+                   session_ref=x_session_token[:8] if x_session_token else None)
         db.commit()
     return t
 
 
 @app.delete("/api/terms/{term_id}", status_code=204)
 def delete_term(term_id: int,
+                request: Request,
                 db: Session = Depends(get_db),
-                user: User = Depends(require_user)):
+                admin: User = Depends(require_admin),
+                x_session_token: Optional[str] = Header(None)):
     t = db.get(Term, term_id)
     if not t:
         raise HTTPException(404, "Термин не найден")
-    if user.role != "admin" and t.created_by_id != user.id:
-        raise HTTPException(403, "Можно удалять только свои термины")
     name, tid = t.term, t.id
     db.delete(t)
     db.commit()
-    log_action(db, user, "delete", "term", tid, name)
+    log_action(db, admin, "delete", "term", tid, name,
+               request=request,
+               session_ref=x_session_token[:8] if x_session_token else None)
     db.commit()
 
 
@@ -606,7 +783,7 @@ SEED = [
     ("Форк", "Код и качество", "Копия чужого репозитория под своим аккаунтом.", "Сделал форк и предложил PR."),
     ("Пул-реквест", "Код и качество", "Запрос на слияние изменений в основную ветку.", "Открыл PR с новой фичей."),
     ("Дедлок", "Код и качество", "Ситуация, когда два процесса ждут друг друга.", "Словили дедлок в проде."),
-    ("Мемори-лик", "Код и качество", "Утечка памяти — программа не освобождает память.", "Мемори-лик съел 8 ГБ за сутки."),
+    ("Мемори-лик", "Код и качество", "Утечка памяти.", "Мемори-лик съел 8 ГБ за сутки."),
     ("Оверфлоу", "Код и качество", "Переполнение — значение вышло за границы типа.", "Оверфлоу int при большом числе."),
     ("Ассерт", "Код и качество", "Проверка предположения в коде.", "Ассерт упал — инвариант нарушен."),
     ("Деприкейтед", "Код и качество", "Устаревшее, но пока работающее.", "Метод деприкейтед, используй новый."),

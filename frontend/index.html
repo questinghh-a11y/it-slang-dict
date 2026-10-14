@@ -131,8 +131,23 @@
 <div id="logsModal" class="modal hidden">
   <div class="modal-card wide">
     <button class="close" data-close>&times;</button>
-    <h2>Журнал правок</h2>
+    <h2>Журнал</h2>
+
+    <div class="log-filters">
+      <input id="logFilterUser" type="text" placeholder="Пользователь" autocomplete="off">
+      <select id="logFilterAction">
+        <option value="">Все действия</option>
+      </select>
+      <input id="logFilterFrom" type="date" title="С даты">
+      <input id="logFilterTo" type="date" title="По дату">
+      <button id="logApplyBtn" class="btn primary">Применить</button>
+      <button id="logResetBtn" class="btn ghost">Сбросить</button>
+      <button id="logExportBtn" class="btn ghost" title="Скачать CSV">⬇ CSV</button>
+    </div>
+
+    <div id="logTotal" class="log-total"></div>
     <div id="logsList" class="logs-list"></div>
+    <button id="logMoreBtn" class="btn ghost hidden">Показать ещё 50</button>
   </div>
 </div>
 

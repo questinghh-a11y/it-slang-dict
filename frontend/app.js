@@ -12,6 +12,14 @@ const state = {
   user: null,
 };
 
+const logState = {
+  items: [],
+  offset: 0,
+  limit: 50,
+  total: 0,
+  actionsLoaded: false,
+};
+
 const $ = (sel) => document.querySelector(sel);
 const grid = $("#grid");
 const status = $("#status");
@@ -71,11 +79,12 @@ function isLoggedIn() { return !!state.user; }
 function updateAuthUI() {
   const logged = isLoggedIn();
   const admin = isAdmin();
-  $("#addBtn").classList.toggle("hidden", !logged);
+  // админ — может всё; обычный пользователь — только чтение и журнал
+  $("#addBtn").classList.toggle("hidden", !admin);
+  $("#usersBtn").classList.toggle("hidden", !admin);
+  $("#logsBtn").classList.toggle("hidden", !logged);
   $("#loginBtn").classList.toggle("hidden", logged);
   $("#logoutBtn").classList.toggle("hidden", !logged);
-  $("#logsBtn").classList.toggle("hidden", !admin);
-  $("#usersBtn").classList.toggle("hidden", !admin);
   const badge = $("#profileBtn");
   if (logged) {
     badge.textContent = state.user.username + (admin ? " · админ" : "");
@@ -171,8 +180,8 @@ function renderGrid() {
       openView(t);
     };
 
-    const canEdit = isAdmin() || (state.user && t.created_by === state.user.username);
-    if (canEdit) {
+    // Кнопки управления — только у админа
+    if (isAdmin()) {
       const actions = document.createElement("div");
       actions.className = "card-actions";
 
@@ -253,7 +262,7 @@ function openView(term) {
 }
 
 function openForm(term = null) {
-  if (!isLoggedIn()) { toast("Войдите, чтобы добавлять термины.", "warn"); return; }
+  if (!isAdmin()) { toast("Только администратор может управлять терминами.", "warn"); return; }
   state.editingId = term ? term.id : null;
   $("#formTitle").textContent = term ? "Редактировать термин" : "Новый термин";
   const form = $("#termForm");
@@ -292,6 +301,7 @@ async function submitForm(e) {
 }
 
 async function deleteTerm(term) {
+  if (!isAdmin()) return;
   if (!confirm(`Удалить термин «${term.term}»?`)) return;
   try {
     await api("/terms/" + term.id, { method: "DELETE" });
@@ -354,9 +364,7 @@ async function submitProfile(e) {
   try {
     const updated = await api("/auth/profile", {
       method: "PUT",
-      body: JSON.stringify({
-        email: f.email.value.trim() || null,
-      }),
+      body: JSON.stringify({ email: f.email.value.trim() || null }),
     });
     state.user = updated;
     closeAll();
@@ -364,28 +372,160 @@ async function submitProfile(e) {
   } catch (err) { toast(err.message, "error"); }
 }
 
+// ---------- журнал ----------
+function shortUA(ua) {
+  if (!ua) return "";
+  const browser =
+    /Edg\//.test(ua) ? "Edge" :
+    /OPR\//.test(ua) ? "Opera" :
+    /YaBrowser/.test(ua) ? "Yandex" :
+    /Chrome\//.test(ua) ? "Chrome" :
+    /Firefox\//.test(ua) ? "Firefox" :
+    /Safari\//.test(ua) ? "Safari" :
+    "браузер";
+  const os =
+    /Windows/.test(ua) ? "Windows" :
+    /iPhone|iPad/.test(ua) ? "iOS" :
+    /Android/.test(ua) ? "Android" :
+    /Mac OS X/.test(ua) ? "macOS" :
+    /Linux/.test(ua) ? "Linux" :
+    "";
+  return os ? `${browser} · ${os}` : browser;
+}
+
+function parseDetails(raw) {
+  if (!raw) return "";
+  let obj;
+  try { obj = JSON.parse(raw); } catch { return escapeHtml(raw); }
+  if (typeof obj !== "object" || obj === null) return escapeHtml(String(obj));
+
+  const lines = [];
+  for (const [k, v] of Object.entries(obj)) {
+    if (v && typeof v === "object" && "from" in v && "to" in v) {
+      const from = v.from === null || v.from === undefined ? "—" : String(v.from);
+      const to = v.to === null || v.to === undefined ? "—" : String(v.to);
+      lines.push(`<div><b>${escapeHtml(k)}</b>: <s>${escapeHtml(from)}</s> → <b>${escapeHtml(to)}</b></div>`);
+    } else if (typeof v === "object" && v !== null) {
+      lines.push(`<div><b>${escapeHtml(k)}</b>: ${escapeHtml(JSON.stringify(v))}</div>`);
+    } else {
+      lines.push(`<div><b>${escapeHtml(k)}</b>: ${escapeHtml(String(v))}</div>`);
+    }
+  }
+  return lines.join("");
+}
+
 async function openLogs() {
+  // фильтр по пользователю — только для админа
+  $("#logFilterUser").classList.toggle("hidden", !isAdmin());
+
+  // список типов действий — загружаем один раз
+  if (!logState.actionsLoaded) {
+    try {
+      const actions = await api("/logs/actions");
+      const sel = $("#logFilterAction");
+      sel.innerHTML = '<option value="">Все действия</option>' +
+        actions.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("");
+      logState.actionsLoaded = true;
+    } catch (e) { /* тихо */ }
+  }
+
+  logState.items = [];
+  logState.offset = 0;
+  $("#logsList").innerHTML = "";
+  await loadLogsPage(true);
+  openModal("#logsModal");
+}
+
+function buildLogParams() {
+  const params = new URLSearchParams();
+  const u = $("#logFilterUser").value.trim();
+  const a = $("#logFilterAction").value;
+  const f = $("#logFilterFrom").value;
+  const t = $("#logFilterTo").value;
+  if (u && isAdmin()) params.set("username", u);
+  if (a) params.set("action", a);
+  if (f) params.set("date_from", f);
+  if (t) params.set("date_to", t);
+  return params;
+}
+
+async function loadLogsPage(reset = false) {
+  if (reset) {
+    logState.items = [];
+    logState.offset = 0;
+    $("#logsList").innerHTML = "";
+  }
+  const params = buildLogParams();
+  params.set("limit", logState.limit);
+  params.set("offset", logState.offset);
+
   try {
-    const rows = await api("/logs?limit=300");
-    const box = $("#logsList");
-    box.innerHTML = "";
-    rows.forEach((r, i) => {
-      const div = document.createElement("div");
-      div.className = "log-row";
-      div.style.setProperty("--i", Math.min(i, 30));
-      const details = r.details ? `<div class="log-details">${escapeHtml(r.details)}</div>` : "";
-      const target = r.target_name ? ` · ${escapeHtml(r.target_name)}` : "";
-      div.innerHTML = `
-        <div class="log-top">
-          <span><span class="log-action ${r.action}">${r.action}</span> ${escapeHtml(r.username)}${target}</span>
-          <span class="log-time">${new Date(r.created_at).toLocaleString("ru")}</span>
-        </div>
-        ${details}
-      `;
-      box.appendChild(div);
+    const data = await api("/logs?" + params);
+    logState.total = data.total;
+    logState.items = logState.items.concat(data.items);
+    logState.offset += data.items.length;
+    renderLogs();
+    $("#logMoreBtn").classList.toggle("hidden", logState.offset >= logState.total);
+    $("#logTotal").textContent =
+      `Всего: ${logState.total} · показано ${logState.items.length}`;
+  } catch (e) { toast(e.message, "error"); }
+}
+
+function renderLogs() {
+  const box = $("#logsList");
+  box.innerHTML = "";
+  logState.items.forEach((r, i) => {
+    const div = document.createElement("div");
+    div.className = "log-row";
+    div.style.setProperty("--i", Math.min(i, 30));
+
+    const detailsHtml = parseDetails(r.details);
+    const target = r.target_name ? ` · ${escapeHtml(r.target_name)}` : "";
+
+    const metaParts = [];
+    if (r.ip_address) metaParts.push(`IP: ${escapeHtml(r.ip_address)}`);
+    if (r.user_agent) metaParts.push(shortUA(r.user_agent));
+    if (r.session_ref) metaParts.push(`сессия #${escapeHtml(r.session_ref)}`);
+
+    div.innerHTML = `
+      <div class="log-top">
+        <span><span class="log-action ${r.action}">${escapeHtml(r.action)}</span> ${escapeHtml(r.username)}${target}</span>
+        <span class="log-time">${new Date(r.created_at).toLocaleString("ru")}</span>
+      </div>
+      ${metaParts.length ? `<div class="log-meta">${metaParts.map(m => `<span>${m}</span>`).join("")}</div>` : ""}
+      ${detailsHtml ? `<div class="log-details-full">${detailsHtml}</div>` : ""}
+    `;
+
+    if (detailsHtml) {
+      div.onclick = () => div.classList.toggle("expanded");
+    } else {
+      div.classList.add("no-details");
+    }
+    box.appendChild(div);
+  });
+}
+
+async function exportLogsCSV() {
+  const params = buildLogParams();
+  try {
+    const res = await fetch(API + "/logs/export?" + params, {
+      headers: state.token ? { "X-Session-Token": state.token } : {},
     });
-    openModal("#logsModal");
-  } catch (e) { toast("Не удалось загрузить журнал: " + e.message, "error"); }
+    if (!res.ok) {
+      const d = await res.json().catch(() => null);
+      throw new Error(d?.detail || `Ошибка ${res.status}`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `logs_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast("Файл скачан", "success");
+  } catch (e) { toast("Не удалось выгрузить: " + e.message, "error"); }
 }
 
 async function openUsers() {
@@ -403,8 +543,8 @@ async function openUsers() {
           <div class="user-role">id ${u.id} · с ${new Date(u.created_at).toLocaleDateString("ru")}${u.email ? " · " + escapeHtml(u.email) : ""}</div>
         </div>
         <select data-uid="${u.id}">
-          <option value="user" ${u.role==="user"?"selected":""}>пользователь</option>
-          <option value="admin" ${u.role==="admin"?"selected":""}>админ</option>
+          <option value="user" ${u.role === "user" ? "selected" : ""}>пользователь</option>
+          <option value="admin" ${u.role === "admin" ? "selected" : ""}>админ</option>
         </select>
       `;
       row.querySelector("select").onchange = async (e) => {
@@ -433,6 +573,7 @@ function closeAll() {
   state.viewingTerm = null;
 }
 
+// ---------- события ----------
 let searchTimer;
 searchInput.addEventListener("input", (e) => {
   clearTimeout(searchTimer);
@@ -447,8 +588,19 @@ $("#termForm").addEventListener("submit", submitForm);
 $("#loginForm").addEventListener("submit", submitLogin);
 $("#registerForm").addEventListener("submit", submitRegister);
 $("#profileForm").addEventListener("submit", submitProfile);
-$("#logsBtn").addEventListener("click", openLogs);
 $("#usersBtn").addEventListener("click", openUsers);
+$("#logsBtn").addEventListener("click", openLogs);
+
+$("#logApplyBtn").addEventListener("click", () => loadLogsPage(true));
+$("#logResetBtn").addEventListener("click", () => {
+  $("#logFilterUser").value = "";
+  $("#logFilterAction").value = "";
+  $("#logFilterFrom").value = "";
+  $("#logFilterTo").value = "";
+  loadLogsPage(true);
+});
+$("#logExportBtn").addEventListener("click", exportLogsCSV);
+$("#logMoreBtn").addEventListener("click", () => loadLogsPage(false));
 
 $("#profileBtn").addEventListener("click", openProfile);
 $("#loginBtn").addEventListener("click", () => openModal("#loginModal"));
@@ -478,6 +630,7 @@ document.querySelectorAll(".modal").forEach(m =>
   m.addEventListener("click", (e) => { if (e.target === m) closeAll(); }));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
 
+// ---------- старт ----------
 (async function init() {
   attachRipple();
   await restoreSession();
