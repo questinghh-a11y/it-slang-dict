@@ -79,7 +79,6 @@ function isLoggedIn() { return !!state.user; }
 function updateAuthUI() {
   const logged = isLoggedIn();
   const admin = isAdmin();
-  // админ — может всё; обычный пользователь — только чтение и журнал
   $("#addBtn").classList.toggle("hidden", !admin);
   $("#usersBtn").classList.toggle("hidden", !admin);
   $("#logsBtn").classList.toggle("hidden", !logged);
@@ -180,7 +179,6 @@ function renderGrid() {
       openView(t);
     };
 
-    // Кнопки управления — только у админа
     if (isAdmin()) {
       const actions = document.createElement("div");
       actions.className = "card-actions";
@@ -415,16 +413,15 @@ function parseDetails(raw) {
 }
 
 async function openLogs() {
-  // фильтр по пользователю — только для админа
   $("#logFilterUser").classList.toggle("hidden", !isAdmin());
 
-  // список типов действий — загружаем один раз
   if (!logState.actionsLoaded) {
     try {
       const actions = await api("/logs/actions");
+      const list = Array.isArray(actions) ? actions : [];
       const sel = $("#logFilterAction");
       sel.innerHTML = '<option value="">Все действия</option>' +
-        actions.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("");
+        list.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("");
       logState.actionsLoaded = true;
     } catch (e) { /* тихо */ }
   }
@@ -461,9 +458,15 @@ async function loadLogsPage(reset = false) {
 
   try {
     const data = await api("/logs?" + params);
-    logState.total = data.total;
-    logState.items = logState.items.concat(data.items);
-    logState.offset += data.items.length;
+
+    // защита: старый API отдавал массив, новый — объект {total, items}
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    const total = Array.isArray(data) ? data.length : (data?.total || 0);
+
+    logState.total = total;
+    logState.items = logState.items.concat(items);
+    logState.offset += items.length;
+
     renderLogs();
     $("#logMoreBtn").classList.toggle("hidden", logState.offset >= logState.total);
     $("#logTotal").textContent =
@@ -531,9 +534,10 @@ async function exportLogsCSV() {
 async function openUsers() {
   try {
     const users = await api("/users");
+    const list = Array.isArray(users) ? users : [];
     const box = $("#usersList");
     box.innerHTML = "";
-    users.forEach((u, i) => {
+    list.forEach((u, i) => {
       const row = document.createElement("div");
       row.className = "user-row";
       row.style.setProperty("--i", Math.min(i, 30));
