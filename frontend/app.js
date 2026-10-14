@@ -1,4 +1,5 @@
 const API = "/api";
+const TOKEN_KEY = "it_slang_token";
 
 const state = {
   terms: [],
@@ -7,6 +8,8 @@ const state = {
   search: "",
   editingId: null,
   viewingTerm: null,
+  token: localStorage.getItem(TOKEN_KEY) || null,
+  user: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -15,14 +18,19 @@ const status = $("#status");
 const searchInput = $("#search");
 const categoriesNav = $("#categories");
 
-// ---------- сетевые вызовы ----------
+// ---------- сеть ----------
 async function api(path, options = {}) {
-  const res = await fetch(API + path, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (state.token) headers["X-Session-Token"] = state.token;
+
+  const res = await fetch(API + path, { headers, ...options });
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
+
+  if (res.status === 401 && state.token) {
+    logout(true);
+    throw new Error("Сессия истекла, войдите заново");
+  }
   if (!res.ok) {
     const msg = data?.detail || `Ошибка ${res.status}`;
     throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
@@ -30,25 +38,77 @@ async function api(path, options = {}) {
   return data;
 }
 
-// ---------- загрузка данных ----------
+// ---------- auth ----------
+function isAdmin() { return state.user?.role === "admin"; }
+function isLoggedIn() { return !!state.user; }
+
+function updateAuthUI() {
+  const logged = isLoggedIn();
+  const admin = isAdmin();
+  $("#addBtn").classList.toggle("hidden", !logged);
+  $("#loginBtn").classList.toggle("hidden", logged);
+  $("#logoutBtn").classList.toggle("hidden", !logged);
+  $("#logsBtn").classList.toggle("hidden", !admin);
+  $("#usersBtn").classList.toggle("hidden", !admin);
+  const badge = $("#userBadge");
+  if (logged) {
+    badge.textContent = state.user.username + (admin ? " · админ" : "");
+    badge.classList.remove("hidden");
+  } else {
+    badge.classList.add("hidden");
+  }
+}
+
+function setSession(token, user) {
+  state.token = token;
+  state.user = user;
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+  updateAuthUI();
+}
+
+function logout(silent = false) {
+  if (state.token) {
+    fetch(API + "/auth/logout", {
+      method: "POST",
+      headers: { "X-Session-Token": state.token },
+    }).catch(() => {});
+  }
+  setSession(null, null);
+  if (!silent) status.textContent = "Вы вышли.";
+  loadTerms();
+}
+
+async function restoreSession() {
+  if (!state.token) return;
+  try {
+    const me = await fetch(API + "/auth/me", {
+      headers: { "X-Session-Token": state.token },
+    });
+    if (!me.ok) throw new Error();
+    state.user = await me.json();
+  } catch {
+    setSession(null, null);
+  }
+}
+
+// ---------- загрузка ----------
 async function loadTerms() {
   const params = new URLSearchParams();
   if (state.search) params.set("q", state.search);
   if (state.activeCategory) params.set("category", state.activeCategory);
+  params.set("limit", "500");
 
   status.textContent = "Загружаю…";
   grid.innerHTML = "";
-
   try {
-    const data = await api("/terms?" + params.toString());
+    const data = await api("/terms?" + params);
     state.terms = data.items;
     renderGrid();
     status.textContent = data.total === 0
       ? "Ничего не найдено."
       : `Найдено: ${data.total}`;
-  } catch (e) {
-    status.textContent = "Ошибка: " + e.message;
-  }
+  } catch (e) { status.textContent = "Ошибка: " + e.message; }
 }
 
 async function loadCategories() {
@@ -65,7 +125,6 @@ function renderGrid() {
   for (const t of state.terms) {
     const card = document.createElement("article");
     card.className = "card";
-    card.onclick = () => openView(t);
 
     const badge = document.createElement("span");
     badge.className = "badge";
@@ -79,13 +138,37 @@ function renderGrid() {
     p.textContent = t.definition;
 
     card.append(badge, h3, p);
+    card.onclick = (e) => {
+      if (e.target.closest(".btn")) return;
+      openView(t);
+    };
+
+    // Показываем действия, если: админ — на любой термин, юзер — только на свои.
+    const canEdit = isAdmin() || (state.user && t.created_by === state.user.username);
+    if (canEdit) {
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn ghost";
+      editBtn.textContent = "✏ Редактировать";
+      editBtn.onclick = (e) => { e.stopPropagation(); openForm(t); };
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn danger";
+      delBtn.textContent = "🗑 Удалить";
+      delBtn.onclick = (e) => { e.stopPropagation(); deleteTerm(t); };
+
+      actions.append(editBtn, delBtn);
+      card.appendChild(actions);
+    }
+
     grid.appendChild(card);
   }
 }
 
 function renderCategories() {
   categoriesNav.innerHTML = "";
-
   const all = document.createElement("button");
   all.className = "cat-chip" + (state.activeCategory === null ? " active" : "");
   all.textContent = "Все";
@@ -121,7 +204,9 @@ function escapeHtml(str) {
   })[s]);
 }
 
-// ---------- модалка просмотра ----------
+// ---------- модалки ----------
+function openModal(id) { $(id).classList.remove("hidden"); }
+
 function openView(term) {
   state.viewingTerm = term;
   $("#viewCategory").textContent = term.category;
@@ -135,11 +220,14 @@ function openView(term) {
   } else {
     wrap.style.display = "none";
   }
-  $("#viewModal").classList.remove("hidden");
+  $("#viewMeta").textContent = term.created_by
+    ? `Добавил: ${term.created_by} · ${new Date(term.created_at).toLocaleString("ru")}`
+    : "";
+  openModal("#viewModal");
 }
 
-// ---------- модалка формы ----------
 function openForm(term = null) {
+  if (!isLoggedIn()) { alert("Войдите, чтобы добавлять термины."); return; }
   state.editingId = term ? term.id : null;
   $("#formTitle").textContent = term ? "Редактировать термин" : "Новый термин";
   const form = $("#termForm");
@@ -150,7 +238,7 @@ function openForm(term = null) {
     form.definition.value = term.definition;
     form.example.value = term.example || "";
   }
-  $("#formModal").classList.remove("hidden");
+  openModal("#formModal");
   form.term.focus();
 }
 
@@ -165,45 +253,127 @@ async function submitForm(e) {
   };
   try {
     if (state.editingId) {
-      await api("/terms/" + state.editingId, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
+      await api("/terms/" + state.editingId, { method: "PUT", body: JSON.stringify(payload) });
     } else {
-      await api("/terms", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+      await api("/terms", { method: "POST", body: JSON.stringify(payload) });
     }
     closeAll();
     await loadCategories();
     await loadTerms();
-  } catch (err) {
-    alert("Не получилось сохранить: " + err.message);
-  }
+  } catch (err) { alert("Не получилось сохранить: " + err.message); }
 }
 
-async function deleteCurrent() {
-  if (!state.viewingTerm) return;
-  if (!confirm(`Удалить термин «${state.viewingTerm.term}»?`)) return;
+async function deleteTerm(term) {
+  if (!confirm(`Удалить термин «${term.term}»?`)) return;
   try {
-    await api("/terms/" + state.viewingTerm.id, { method: "DELETE" });
-    closeAll();
+    await api("/terms/" + term.id, { method: "DELETE" });
     await loadCategories();
     await loadTerms();
-  } catch (err) {
-    alert("Не получилось удалить: " + err.message);
-  }
+  } catch (err) { alert("Не получилось удалить: " + err.message); }
+}
+
+async function submitLogin(e) {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const data = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username: f.username.value, password: f.password.value }),
+    });
+    setSession(data.token, data.user);
+    closeAll();
+    await loadTerms();
+    status.textContent = `Добро пожаловать, ${data.user.username}!`;
+  } catch (err) { alert(err.message); }
+}
+
+async function submitRegister(e) {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    await api("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ username: f.username.value, password: f.password.value }),
+    });
+    // сразу логинимся
+    const data = await api("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username: f.username.value, password: f.password.value }),
+    });
+    setSession(data.token, data.user);
+    closeAll();
+    await loadTerms();
+    status.textContent = `Аккаунт создан. Добро пожаловать, ${data.user.username}!`;
+  } catch (err) { alert(err.message); }
+}
+
+async function openLogs() {
+  try {
+    const rows = await api("/logs?limit=300");
+    const box = $("#logsList");
+    box.innerHTML = "";
+    for (const r of rows) {
+      const div = document.createElement("div");
+      div.className = "log-row";
+      const details = r.details ? `<div class="log-details">${escapeHtml(r.details)}</div>` : "";
+      const target = r.target_name ? ` · ${escapeHtml(r.target_name)}` : "";
+      div.innerHTML = `
+        <div class="log-top">
+          <span><span class="log-action ${r.action}">${r.action}</span> ${escapeHtml(r.username)}${target}</span>
+          <span class="log-time">${new Date(r.created_at).toLocaleString("ru")}</span>
+        </div>
+        ${details}
+      `;
+      box.appendChild(div);
+    }
+    openModal("#logsModal");
+  } catch (e) { alert("Не удалось загрузить журнал: " + e.message); }
+}
+
+async function openUsers() {
+  try {
+    const users = await api("/users");
+    const box = $("#usersList");
+    box.innerHTML = "";
+    for (const u of users) {
+      const row = document.createElement("div");
+      row.className = "user-row";
+      row.innerHTML = `
+        <div>
+          <div class="user-name">${escapeHtml(u.username)}</div>
+          <div class="user-role">id ${u.id} · с ${new Date(u.created_at).toLocaleDateString("ru")}</div>
+        </div>
+        <select data-uid="${u.id}">
+          <option value="user" ${u.role==="user"?"selected":""}>пользователь</option>
+          <option value="admin" ${u.role==="admin"?"selected":""}>админ</option>
+        </select>
+      `;
+      row.querySelector("select").onchange = async (e) => {
+        try {
+          await api("/users/" + u.id + "/role", {
+            method: "PUT",
+            body: JSON.stringify({ role: e.target.value }),
+          });
+          status.textContent = `Роль ${u.username} изменена.`;
+        } catch (err) {
+          alert(err.message);
+          e.target.value = u.role;
+        }
+      };
+      box.appendChild(row);
+    }
+    openModal("#usersModal");
+  } catch (e) { alert("Не удалось загрузить пользователей: " + e.message); }
 }
 
 function closeAll() {
-  $("#viewModal").classList.add("hidden");
-  $("#formModal").classList.add("hidden");
+  ["#viewModal", "#formModal", "#loginModal", "#registerModal", "#logsModal", "#usersModal"]
+    .forEach(id => $(id).classList.add("hidden"));
   state.editingId = null;
   state.viewingTerm = null;
 }
 
-// ---------- обработчики ----------
+// ---------- события ----------
 let searchTimer;
 searchInput.addEventListener("input", (e) => {
   clearTimeout(searchTimer);
@@ -214,13 +384,25 @@ searchInput.addEventListener("input", (e) => {
 });
 
 $("#addBtn").addEventListener("click", () => openForm());
-$("#editBtn").addEventListener("click", () => {
-  const t = state.viewingTerm;
-  closeAll();
-  openForm(t);
-});
-$("#deleteBtn").addEventListener("click", deleteCurrent);
 $("#termForm").addEventListener("submit", submitForm);
+$("#loginForm").addEventListener("submit", submitLogin);
+$("#registerForm").addEventListener("submit", submitRegister);
+$("#logsBtn").addEventListener("click", openLogs);
+$("#usersBtn").addEventListener("click", openUsers);
+
+$("#loginBtn").addEventListener("click", () => openModal("#loginModal"));
+$("#logoutBtn").addEventListener("click", () => logout());
+
+$("#toRegister").addEventListener("click", (e) => {
+  e.preventDefault();
+  closeAll();
+  openModal("#registerModal");
+});
+$("#toLogin").addEventListener("click", (e) => {
+  e.preventDefault();
+  closeAll();
+  openModal("#loginModal");
+});
 
 $("#randomBtn").addEventListener("click", async () => {
   try {
@@ -229,20 +411,16 @@ $("#randomBtn").addEventListener("click", async () => {
   } catch (e) { alert(e.message); }
 });
 
-document.querySelectorAll("[data-close]").forEach((el) => {
-  el.addEventListener("click", closeAll);
-});
-document.querySelectorAll(".modal").forEach((m) => {
-  m.addEventListener("click", (e) => {
-    if (e.target === m) closeAll();
-  });
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeAll();
-});
+document.querySelectorAll("[data-close]").forEach(el =>
+  el.addEventListener("click", closeAll));
+document.querySelectorAll(".modal").forEach(m =>
+  m.addEventListener("click", (e) => { if (e.target === m) closeAll(); }));
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
 
 // ---------- старт ----------
 (async function init() {
+  await restoreSession();
+  updateAuthUI();
   await loadCategories();
   await loadTerms();
 })();

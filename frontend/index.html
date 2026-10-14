@@ -18,9 +18,14 @@
   </div>
 
   <div class="controls">
-    <input id="search" type="search" placeholder="Поиск термина или определения…" autocomplete="off">
+    <input id="search" type="search" placeholder="Поиск термина…" autocomplete="off">
     <button id="randomBtn" class="btn ghost" title="Случайный термин">🎲</button>
-    <button id="addBtn" class="btn primary">+ Добавить</button>
+    <button id="addBtn" class="btn primary hidden">+ Добавить</button>
+    <button id="logsBtn" class="btn ghost hidden">Журнал</button>
+    <button id="usersBtn" class="btn ghost hidden">Люди</button>
+    <button id="loginBtn" class="btn ghost">Войти</button>
+    <button id="logoutBtn" class="btn ghost hidden">Выйти</button>
+    <span id="userBadge" class="badge admin hidden"></span>
   </div>
 </header>
 
@@ -31,7 +36,7 @@
   <section id="grid" class="grid"></section>
 </main>
 
-<!-- Модалка: просмотр термина -->
+<!-- Просмотр термина -->
 <div id="viewModal" class="modal hidden">
   <div class="modal-card">
     <button class="close" data-close>&times;</button>
@@ -42,14 +47,11 @@
       <span class="label">Пример:</span>
       <p id="viewExample"></p>
     </div>
-    <div class="modal-actions">
-      <button id="editBtn" class="btn ghost">Редактировать</button>
-      <button id="deleteBtn" class="btn danger">Удалить</button>
-    </div>
+    <p class="meta" id="viewMeta"></p>
   </div>
 </div>
 
-<!-- Модалка: форма -->
+<!-- Форма термина -->
 <div id="formModal" class="modal hidden">
   <div class="modal-card">
     <button class="close" data-close>&times;</button>
@@ -71,6 +73,58 @@
         <button type="submit" class="btn primary">Сохранить</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- Вход -->
+<div id="loginModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="close" data-close>&times;</button>
+    <h2>Вход</h2>
+    <form id="loginForm">
+      <label>Имя пользователя<input name="username" required autocomplete="username"></label>
+      <label>Пароль<input type="password" name="password" required autocomplete="current-password"></label>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close>Отмена</button>
+        <button type="submit" class="btn primary">Войти</button>
+      </div>
+    </form>
+    <p class="hint">Нет аккаунта? <a href="#" id="toRegister">Зарегистрироваться</a></p>
+  </div>
+</div>
+
+<!-- Регистрация -->
+<div id="registerModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="close" data-close>&times;</button>
+    <h2>Регистрация</h2>
+    <form id="registerForm">
+      <label>Имя пользователя (мин. 3 символа)<input name="username" required minlength="3" maxlength="50"></label>
+      <label>Пароль (мин. 6 символов)<input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close>Отмена</button>
+        <button type="submit" class="btn primary">Создать аккаунт</button>
+      </div>
+    </form>
+    <p class="hint">Уже есть аккаунт? <a href="#" id="toLogin">Войти</a></p>
+  </div>
+</div>
+
+<!-- Журнал правок -->
+<div id="logsModal" class="modal hidden">
+  <div class="modal-card wide">
+    <button class="close" data-close>&times;</button>
+    <h2>Журнал правок</h2>
+    <div id="logsList" class="logs-list"></div>
+  </div>
+</div>
+
+<!-- Пользователи -->
+<div id="usersModal" class="modal hidden">
+  <div class="modal-card wide">
+    <button class="close" data-close>&times;</button>
+    <h2>Пользователи</h2>
+    <div id="usersList" class="users-list"></div>
   </div>
 </div>
 
