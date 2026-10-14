@@ -76,7 +76,6 @@ function updateAuthUI() {
   $("#logoutBtn").classList.toggle("hidden", !logged);
   $("#logsBtn").classList.toggle("hidden", !admin);
   $("#usersBtn").classList.toggle("hidden", !admin);
-  $("#newsletterBtn").classList.toggle("hidden", !admin);
   const badge = $("#profileBtn");
   if (logged) {
     badge.textContent = state.user.username + (admin ? " · админ" : "");
@@ -346,7 +345,6 @@ function openProfile() {
   f.reset();
   f.username.value = state.user.username;
   f.email.value = state.user.email || "";
-  f.newsletter.checked = !!state.user.newsletter;
   openModal("#profileModal");
 }
 
@@ -358,7 +356,6 @@ async function submitProfile(e) {
       method: "PUT",
       body: JSON.stringify({
         email: f.email.value.trim() || null,
-        newsletter: f.newsletter.checked,
       }),
     });
     state.user = updated;
@@ -428,45 +425,9 @@ async function openUsers() {
   } catch (e) { toast("Не удалось загрузить пользователей: " + e.message, "error"); }
 }
 
-async function openNewsletter() {
-  try {
-    const stats = await api("/newsletter/stats");
-    const box = $("#newsletterStats");
-    const smtpLine = stats.smtp_ready
-      ? `<span class="ok">SMTP настроен</span>`
-      : `<span class="warn">SMTP не настроен — письма не уйдут</span>`;
-    box.innerHTML = `Подписчиков: <strong>${stats.subscribers}</strong> из ${stats.total_users} пользователей · ${smtpLine}`;
-    openModal("#newsletterModal");
-  } catch (e) { toast(e.message, "error"); }
-}
-
-async function submitNewsletter(e) {
-  e.preventDefault();
-  const f = e.target;
-  if (!confirm("Отправить письмо всем подписчикам?")) return;
-  try {
-    const res = await api("/newsletter/send", {
-      method: "POST",
-      body: JSON.stringify({
-        subject: f.subject.value.trim(),
-        body: f.body.value.trim(),
-      }),
-    });
-    toast(`В очередь поставлено: ${res.queued} писем`, "success");
-    closeAll();
-  } catch (err) { toast(err.message, "error"); }
-}
-
-async function sendTestMail() {
-  try {
-    await api("/newsletter/test", { method: "POST" });
-    toast("Тестовое письмо отправлено", "success");
-  } catch (err) { toast(err.message, "error"); }
-}
-
 function closeAll() {
   ["#viewModal", "#formModal", "#loginModal", "#registerModal",
-   "#logsModal", "#usersModal", "#profileModal", "#newsletterModal"]
+   "#logsModal", "#usersModal", "#profileModal"]
     .forEach(id => $(id).classList.add("hidden"));
   state.editingId = null;
   state.viewingTerm = null;
@@ -488,9 +449,6 @@ $("#registerForm").addEventListener("submit", submitRegister);
 $("#profileForm").addEventListener("submit", submitProfile);
 $("#logsBtn").addEventListener("click", openLogs);
 $("#usersBtn").addEventListener("click", openUsers);
-$("#newsletterBtn").addEventListener("click", openNewsletter);
-$("#newsletterForm").addEventListener("submit", submitNewsletter);
-$("#testMailBtn").addEventListener("click", sendTestMail);
 
 $("#profileBtn").addEventListener("click", openProfile);
 $("#loginBtn").addEventListener("click", () => openModal("#loginModal"));

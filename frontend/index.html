@@ -39,7 +39,6 @@
     <button id="addBtn" class="btn primary hidden">+ Добавить</button>
     <button id="logsBtn" class="btn ghost hidden">Журнал</button>
     <button id="usersBtn" class="btn ghost hidden">Люди</button>
-    <button id="newsletterBtn" class="btn ghost hidden">Рассылка</button>
     <button id="loginBtn" class="btn ghost">Войти</button>
     <button id="logoutBtn" class="btn ghost hidden">Выйти</button>
     <button id="profileBtn" class="badge admin hidden"></button>
@@ -118,7 +117,7 @@
     <form id="registerForm">
       <label>Имя пользователя (мин. 3 символа)<input name="username" required minlength="3" maxlength="50"></label>
       <label>Пароль (мин. 6 символов)<input type="password" name="password" required minlength="6" autocomplete="new-password"></label>
-      <label>Email (необязательно)<input type="email" name="email" placeholder="you@example.com"></label>
+      <label>Email<input type="email" name="email" placeholder="you@example.com"></label>
       <div class="modal-actions">
         <button type="button" class="btn ghost" data-close>Отмена</button>
         <button type="submit" class="btn primary">Создать аккаунт</button>
@@ -154,30 +153,9 @@
     <form id="profileForm">
       <label>Имя пользователя<input name="username" disabled></label>
       <label>Email<input type="email" name="email" placeholder="you@example.com"></label>
-      <label class="checkbox-label">
-        <input type="checkbox" name="newsletter">
-        <span>Получать рассылку на почту</span>
-      </label>
       <div class="modal-actions">
         <button type="button" class="btn ghost" data-close>Отмена</button>
         <button type="submit" class="btn primary">Сохранить</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Рассылка (админ) -->
-<div id="newsletterModal" class="modal hidden">
-  <div class="modal-card wide">
-    <button class="close" data-close>&times;</button>
-    <h2>Рассылка</h2>
-    <div id="newsletterStats" class="newsletter-stats"></div>
-    <form id="newsletterForm">
-      <label>Тема<input name="subject" required maxlength="200"></label>
-      <label>Текст письма<textarea name="body" rows="10" required></textarea></label>
-      <div class="modal-actions">
-        <button type="button" class="btn ghost" id="testMailBtn">Тест себе</button>
-        <button type="submit" class="btn primary">Отправить всем</button>
       </div>
     </form>
   </div>

@@ -504,7 +504,6 @@ form input:focus, form textarea:focus {
 .log-action.login { background: rgba(124,92,255,.15); color: #a78bfa; }
 .log-action.register { background: rgba(124,92,255,.15); color: #a78bfa; }
 .log-action.update_profile { background: rgba(34,211,238,.15); color: var(--accent-2); }
-.log-action.newsletter { background: rgba(234,179,8,.15); color: var(--warn); }
 .log-action.change_role { background: rgba(234,179,8,.15); color: var(--warn); }
 .log-row .log-time {
   color: var(--muted); font-size: 11.5px;
@@ -575,38 +574,6 @@ form input:focus, form textarea:focus {
 @keyframes toastOut {
   to { opacity: 0; transform: translateX(100px) scale(.9); }
 }
-
-.checkbox-label {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 10px !important;
-  cursor: pointer;
-  padding: 10px 12px;
-  background: rgba(30,34,45,0.5);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  transition: all .2s;
-}
-.checkbox-label:hover { border-color: var(--accent); }
-.checkbox-label input[type="checkbox"] {
-  width: 18px; height: 18px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.checkbox-label span { color: var(--text); font-weight: 500; }
-
-.newsletter-stats {
-  background: rgba(30,34,45,0.6);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 18px;
-  font-size: 13.5px;
-  color: var(--muted);
-}
-.newsletter-stats strong { color: var(--text); font-weight: 600; }
-.newsletter-stats .warn { color: var(--warn); }
-.newsletter-stats .ok { color: var(--ok); }
 
 .hidden { display: none !important; }
 
