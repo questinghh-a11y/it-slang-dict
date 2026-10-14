@@ -14,14 +14,26 @@ from sqlalchemy import (create_engine, Column, Integer, String, Text,
                         DateTime, func, or_)
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-
 import os
 
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+import random
+
+from fastapi import FastAPI, HTTPException, Query, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+from sqlalchemy import (create_engine, Column, Integer, String, Text,
+                        DateTime, func, or_)
+from sqlalchemy.orm import declarative_base, sessionmaker, Session
+
+# --- пути и БД ---
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'slang.db'}")
-
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -30,8 +42,11 @@ if DATABASE_URL.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
-# ---------------- модель БД ----------------
+Base = declarative_base()
+
+# --- модель БД ---
 class Term(Base):
     __tablename__ = "terms"
 
