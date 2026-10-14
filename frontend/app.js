@@ -18,7 +18,6 @@ const status = $("#status");
 const searchInput = $("#search");
 const categoriesNav = $("#categories");
 
-// ---------- тосты ----------
 function toast(message, type = "info", timeout = 3500) {
   const box = $("#toasts");
   const el = document.createElement("div");
@@ -31,7 +30,6 @@ function toast(message, type = "info", timeout = 3500) {
   }, timeout);
 }
 
-// ---------- ripple ----------
 function attachRipple() {
   document.addEventListener("click", (e) => {
     const btn = e.target.closest(".btn");
@@ -48,7 +46,6 @@ function attachRipple() {
   });
 }
 
-// ---------- сеть ----------
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   if (state.token) headers["X-Session-Token"] = state.token;
@@ -68,7 +65,6 @@ async function api(path, options = {}) {
   return data;
 }
 
-// ---------- auth ----------
 function isAdmin() { return state.user?.role === "admin"; }
 function isLoggedIn() { return !!state.user; }
 
@@ -80,7 +76,8 @@ function updateAuthUI() {
   $("#logoutBtn").classList.toggle("hidden", !logged);
   $("#logsBtn").classList.toggle("hidden", !admin);
   $("#usersBtn").classList.toggle("hidden", !admin);
-  const badge = $("#userBadge");
+  $("#newsletterBtn").classList.toggle("hidden", !admin);
+  const badge = $("#profileBtn");
   if (logged) {
     badge.textContent = state.user.username + (admin ? " · админ" : "");
     badge.classList.remove("hidden");
@@ -122,7 +119,6 @@ async function restoreSession() {
   }
 }
 
-// ---------- загрузка ----------
 async function loadTerms() {
   const params = new URLSearchParams();
   if (state.search) params.set("q", state.search);
@@ -152,7 +148,6 @@ async function loadCategories() {
   } catch (e) { /* тихо */ }
 }
 
-// ---------- отрисовка ----------
 function renderGrid() {
   grid.innerHTML = "";
   state.terms.forEach((t, i) => {
@@ -237,7 +232,6 @@ function escapeHtml(str) {
   })[s]);
 }
 
-// ---------- модалки ----------
 function openModal(id) { $(id).classList.remove("hidden"); }
 
 function openView(term) {
@@ -329,7 +323,11 @@ async function submitRegister(e) {
   try {
     await api("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ username: f.username.value, password: f.password.value }),
+      body: JSON.stringify({
+        username: f.username.value,
+        password: f.password.value,
+        email: f.email.value.trim() || null,
+      }),
     });
     const data = await api("/auth/login", {
       method: "POST",
@@ -339,6 +337,33 @@ async function submitRegister(e) {
     closeAll();
     await loadTerms();
     toast(`Аккаунт создан. Привет, ${data.user.username}!`, "success");
+  } catch (err) { toast(err.message, "error"); }
+}
+
+function openProfile() {
+  if (!isLoggedIn()) return;
+  const f = $("#profileForm");
+  f.reset();
+  f.username.value = state.user.username;
+  f.email.value = state.user.email || "";
+  f.newsletter.checked = !!state.user.newsletter;
+  openModal("#profileModal");
+}
+
+async function submitProfile(e) {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const updated = await api("/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify({
+        email: f.email.value.trim() || null,
+        newsletter: f.newsletter.checked,
+      }),
+    });
+    state.user = updated;
+    closeAll();
+    toast("Профиль обновлён", "success");
   } catch (err) { toast(err.message, "error"); }
 }
 
@@ -378,7 +403,7 @@ async function openUsers() {
       row.innerHTML = `
         <div>
           <div class="user-name">${escapeHtml(u.username)}</div>
-          <div class="user-role">id ${u.id} · с ${new Date(u.created_at).toLocaleDateString("ru")}</div>
+          <div class="user-role">id ${u.id} · с ${new Date(u.created_at).toLocaleDateString("ru")}${u.email ? " · " + escapeHtml(u.email) : ""}</div>
         </div>
         <select data-uid="${u.id}">
           <option value="user" ${u.role==="user"?"selected":""}>пользователь</option>
@@ -403,14 +428,50 @@ async function openUsers() {
   } catch (e) { toast("Не удалось загрузить пользователей: " + e.message, "error"); }
 }
 
+async function openNewsletter() {
+  try {
+    const stats = await api("/newsletter/stats");
+    const box = $("#newsletterStats");
+    const smtpLine = stats.smtp_ready
+      ? `<span class="ok">SMTP настроен</span>`
+      : `<span class="warn">SMTP не настроен — письма не уйдут</span>`;
+    box.innerHTML = `Подписчиков: <strong>${stats.subscribers}</strong> из ${stats.total_users} пользователей · ${smtpLine}`;
+    openModal("#newsletterModal");
+  } catch (e) { toast(e.message, "error"); }
+}
+
+async function submitNewsletter(e) {
+  e.preventDefault();
+  const f = e.target;
+  if (!confirm("Отправить письмо всем подписчикам?")) return;
+  try {
+    const res = await api("/newsletter/send", {
+      method: "POST",
+      body: JSON.stringify({
+        subject: f.subject.value.trim(),
+        body: f.body.value.trim(),
+      }),
+    });
+    toast(`В очередь поставлено: ${res.queued} писем`, "success");
+    closeAll();
+  } catch (err) { toast(err.message, "error"); }
+}
+
+async function sendTestMail() {
+  try {
+    await api("/newsletter/test", { method: "POST" });
+    toast("Тестовое письмо отправлено", "success");
+  } catch (err) { toast(err.message, "error"); }
+}
+
 function closeAll() {
-  ["#viewModal", "#formModal", "#loginModal", "#registerModal", "#logsModal", "#usersModal"]
+  ["#viewModal", "#formModal", "#loginModal", "#registerModal",
+   "#logsModal", "#usersModal", "#profileModal", "#newsletterModal"]
     .forEach(id => $(id).classList.add("hidden"));
   state.editingId = null;
   state.viewingTerm = null;
 }
 
-// ---------- события ----------
 let searchTimer;
 searchInput.addEventListener("input", (e) => {
   clearTimeout(searchTimer);
@@ -424,9 +485,14 @@ $("#addBtn").addEventListener("click", () => openForm());
 $("#termForm").addEventListener("submit", submitForm);
 $("#loginForm").addEventListener("submit", submitLogin);
 $("#registerForm").addEventListener("submit", submitRegister);
+$("#profileForm").addEventListener("submit", submitProfile);
 $("#logsBtn").addEventListener("click", openLogs);
 $("#usersBtn").addEventListener("click", openUsers);
+$("#newsletterBtn").addEventListener("click", openNewsletter);
+$("#newsletterForm").addEventListener("submit", submitNewsletter);
+$("#testMailBtn").addEventListener("click", sendTestMail);
 
+$("#profileBtn").addEventListener("click", openProfile);
 $("#loginBtn").addEventListener("click", () => openModal("#loginModal"));
 $("#logoutBtn").addEventListener("click", () => logout());
 
@@ -454,7 +520,6 @@ document.querySelectorAll(".modal").forEach(m =>
   m.addEventListener("click", (e) => { if (e.target === m) closeAll(); }));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
 
-// ---------- старт ----------
 (async function init() {
   attachRipple();
   await restoreSession();

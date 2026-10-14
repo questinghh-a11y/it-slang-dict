@@ -29,7 +29,6 @@ body {
   position: relative;
 }
 
-/* ---------- анимированный фон ---------- */
 .bg-mesh {
   position: fixed; inset: 0; z-index: -2;
   overflow: hidden; pointer-events: none;
@@ -84,7 +83,6 @@ body {
   pointer-events: none;
 }
 
-/* ---------- topbar ---------- */
 .topbar {
   display: flex; flex-wrap: wrap; gap: 20px;
   align-items: center; justify-content: space-between;
@@ -160,7 +158,6 @@ body {
 }
 .search-wrap:focus-within .search-icon { color: var(--accent); }
 
-/* ---------- кнопки ---------- */
 .btn {
   border: 1px solid var(--border);
   background: var(--panel);
@@ -211,7 +208,6 @@ body {
 .btn.danger { color: var(--danger); border-color: rgba(239,68,68,.35); }
 .btn.danger:hover { background: rgba(239,68,68,.1); border-color: var(--danger); box-shadow: 0 6px 20px rgba(239,68,68,0.2); }
 
-/* ripple */
 .ripple {
   position: absolute;
   border-radius: 50%;
@@ -224,7 +220,6 @@ body {
   to { transform: scale(4); opacity: 0; }
 }
 
-/* ---------- категории ---------- */
 .categories {
   display: flex; flex-wrap: wrap; gap: 8px;
   padding: 20px 32px 4px;
@@ -259,7 +254,6 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- main ---------- */
 main { padding: 20px 32px; }
 
 .status {
@@ -271,7 +265,6 @@ main { padding: 20px 32px; }
 }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ---------- сетка карточек ---------- */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -337,7 +330,6 @@ main { padding: 20px 32px; }
   padding: 6px 11px; font-size: 11.5px; border-radius: 9px;
 }
 
-/* ---------- бейджи ---------- */
 .badge {
   display: inline-block;
   align-self: flex-start;
@@ -361,6 +353,8 @@ main { padding: 20px 32px; }
   border-color: rgba(34,197,94,0.4);
   color: var(--ok);
   align-self: center;
+  cursor: pointer;
+  font-family: inherit;
   animation: pulse 2.5s ease-in-out infinite;
 }
 @keyframes pulse {
@@ -368,7 +362,6 @@ main { padding: 20px 32px; }
   50%      { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
 }
 
-/* ---------- модалки ---------- */
 .modal {
   position: fixed; inset: 0;
   background: rgba(6,8,12,0.7);
@@ -445,7 +438,6 @@ main { padding: 20px 32px; }
   transform: rotate(90deg);
 }
 
-/* ---------- формы ---------- */
 form { display: flex; flex-direction: column; gap: 16px; }
 form label {
   display: flex; flex-direction: column; gap: 8px;
@@ -463,6 +455,10 @@ form input, form textarea {
   outline: none;
   transition: all .25s;
 }
+form input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 form input:focus, form textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(124,92,255,0.15);
@@ -476,7 +472,6 @@ form input:focus, form textarea:focus {
 .hint a { color: var(--accent-2); text-decoration: none; font-weight: 500; }
 .hint a:hover { text-decoration: underline; }
 
-/* ---------- журнал ---------- */
 .logs-list { display: flex; flex-direction: column; gap: 8px; }
 .log-row {
   background: rgba(30,34,45,0.55);
@@ -508,6 +503,8 @@ form input:focus, form textarea:focus {
 .log-action.delete { background: rgba(239,68,68,.15); color: var(--danger); }
 .log-action.login { background: rgba(124,92,255,.15); color: #a78bfa; }
 .log-action.register { background: rgba(124,92,255,.15); color: #a78bfa; }
+.log-action.update_profile { background: rgba(34,211,238,.15); color: var(--accent-2); }
+.log-action.newsletter { background: rgba(234,179,8,.15); color: var(--warn); }
 .log-action.change_role { background: rgba(234,179,8,.15); color: var(--warn); }
 .log-row .log-time {
   color: var(--muted); font-size: 11.5px;
@@ -518,7 +515,6 @@ form input:focus, form textarea:focus {
   font-size: 11.5px; word-break: break-all; margin-top: 4px;
 }
 
-/* ---------- пользователи ---------- */
 .users-list { display: flex; flex-direction: column; gap: 8px; }
 .user-row {
   background: rgba(30,34,45,0.55);
@@ -549,7 +545,6 @@ form input:focus, form textarea:focus {
 }
 .user-row select:focus { border-color: var(--accent); }
 
-/* ---------- тосты ---------- */
 .toasts {
   position: fixed; top: 90px; right: 24px;
   display: flex; flex-direction: column; gap: 10px;
@@ -581,9 +576,40 @@ form input:focus, form textarea:focus {
   to { opacity: 0; transform: translateX(100px) scale(.9); }
 }
 
+.checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px !important;
+  cursor: pointer;
+  padding: 10px 12px;
+  background: rgba(30,34,45,0.5);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: all .2s;
+}
+.checkbox-label:hover { border-color: var(--accent); }
+.checkbox-label input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.checkbox-label span { color: var(--text); font-weight: 500; }
+
+.newsletter-stats {
+  background: rgba(30,34,45,0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.newsletter-stats strong { color: var(--text); font-weight: 600; }
+.newsletter-stats .warn { color: var(--warn); }
+.newsletter-stats .ok { color: var(--ok); }
+
 .hidden { display: none !important; }
 
-/* ---------- скроллбар ---------- */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -593,7 +619,6 @@ form input:focus, form textarea:focus {
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(124,92,255,0.6); }
 
-/* ---------- адаптив ---------- */
 @media (max-width: 720px) {
   .topbar { padding: 16px; gap: 12px; }
   #search, #search:focus { width: 100%; }

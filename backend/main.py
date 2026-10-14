@@ -1,7 +1,9 @@
 """
-Онлайн-словарь ИТ-сленга — бэкенд с ролями.
+Онлайн-словарь ИТ-сленга — бэкенд.
 Локально:  uvicorn main:app --reload --port 8000
-Env:       DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD
+Env:       DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD,
+           SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD,
+           SMTP_FROM, SMTP_FROM_NAME, SMTP_USE_SSL
 """
 from __future__ import annotations
 
@@ -9,16 +11,22 @@ import os
 import json
 import random
 import secrets
+import smtplib
 from datetime import datetime
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query, Depends, Header
+from fastapi import (FastAPI, HTTPException, Query, Depends, Header,
+                     BackgroundTasks)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy import (create_engine, Column, Integer, String, Text,
-                        DateTime, ForeignKey, func, or_)
+                        Boolean, DateTime, ForeignKey, func, or_, text,
+                        inspect)
 from sqlalchemy.orm import (declarative_base, sessionmaker, Session,
                             relationship)
 from passlib.hash import pbkdf2_sha256
@@ -47,6 +55,8 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     password_hash = Column(String(200), nullable=False)
+    email = Column(String(150), nullable=True)
+    newsletter = Column(Boolean, nullable=False, default=True)
     role = Column(String(20), nullable=False, default="user")
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
@@ -89,6 +99,86 @@ class EditLog(Base):
 
 
 Base.metadata.create_all(engine)
+
+
+# ---------------- миграция ----------------
+def migrate():
+    """Добавляет новые колонки в существующие таблицы, если их нет."""
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    cols = {c["name"] for c in inspector.get_columns("users")}
+    with engine.begin() as conn:
+        if "email" not in cols:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR(150)"))
+        if "newsletter" not in cols:
+            conn.execute(text(
+                "ALTER TABLE users ADD COLUMN newsletter BOOLEAN DEFAULT TRUE"
+            ))
+
+
+migrate()
+
+
+# ---------------- SMTP ----------------
+SMTP_HOST = os.environ.get("SMTP_HOST", "")
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+SMTP_USER = os.environ.get("SMTP_USER", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_FROM = os.environ.get("SMTP_FROM", SMTP_USER or "noreply@example.com")
+SMTP_FROM_NAME = os.environ.get("SMTP_FROM_NAME", "Словарь ИТ-сленга")
+SMTP_USE_SSL = os.environ.get("SMTP_USE_SSL", "false").lower() == "true"
+
+
+def smtp_configured() -> bool:
+    return bool(SMTP_HOST and SMTP_USER and SMTP_PASSWORD)
+
+
+def send_email(to_email: str, subject: str, body_text: str,
+               body_html: Optional[str] = None) -> bool:
+    """Отправляет письмо. Возвращает True при успехе."""
+    if not smtp_configured():
+        print("[smtp] не настроен, письмо не отправлено")
+        return False
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = formataddr((SMTP_FROM_NAME, SMTP_FROM))
+    msg["To"] = to_email
+
+    msg.attach(MIMEText(body_text, "plain", "utf-8"))
+    if body_html:
+        msg.attach(MIMEText(body_html, "html", "utf-8"))
+
+    try:
+        if SMTP_USE_SSL or SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20)
+        else:
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20)
+            server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.sendmail(SMTP_FROM, [to_email], msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"[smtp] ошибка отправки на {to_email}: {e}")
+        return False
+
+
+def render_welcome(username: str):
+    subject = "Добро пожаловать в Словарь ИТ-сленга"
+    text = (f"Привет, {username}!\n\n"
+            f"Твой аккаунт создан. Теперь ты можешь добавлять термины "
+            f"и предлагать правки.\n\n"
+            f"— Словарь ИТ-сленга")
+    html = f"""<!doctype html>
+<html><body style="font-family:sans-serif;background:#0f1117;color:#e6e9ef;padding:24px">
+<div style="max-width:520px;margin:auto;background:#171a23;border-radius:16px;padding:28px;border:1px solid #2a2f3d">
+<h2 style="color:#22d3ee;margin:0 0 16px">Привет, {username}!</h2>
+<p style="line-height:1.6;color:#cdd3e0">Твой аккаунт создан. Теперь ты можешь добавлять термины и предлагать правки.</p>
+<p style="color:#8b93a7;font-size:13px;margin-top:24px">— Словарь ИТ-сленга</p>
+</div></body></html>"""
+    return subject, text, html
 
 
 # ---------------- пароли и логи ----------------
@@ -155,6 +245,7 @@ def require_admin(user: User = Depends(require_user)) -> User:
 class RegisterIn(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6, max_length=200)
+    email: Optional[EmailStr] = None
 
 
 class LoginIn(BaseModel):
@@ -162,10 +253,22 @@ class LoginIn(BaseModel):
     password: str
 
 
+class ProfileIn(BaseModel):
+    email: Optional[EmailStr] = None
+    newsletter: Optional[bool] = None
+
+
+class NewsletterIn(BaseModel):
+    subject: str = Field(..., min_length=1, max_length=200)
+    body: str = Field(..., min_length=1, max_length=20000)
+
+
 class UserOut(BaseModel):
     id: int
     username: str
     role: str
+    email: Optional[str] = None
+    newsletter: bool = True
     created_at: datetime
     class Config:
         from_attributes = True
@@ -203,7 +306,7 @@ class TermOut(TermBase):
 
 
 # ---------------- приложение ----------------
-app = FastAPI(title="IT Slang Dictionary API", version="2.0.0")
+app = FastAPI(title="IT Slang Dictionary API", version="3.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -213,22 +316,31 @@ app.add_middleware(
 
 # ---------------- auth ----------------
 @app.post("/api/auth/register", response_model=UserOut, status_code=201)
-def register(payload: RegisterIn, db: Session = Depends(get_db)):
+def register(payload: RegisterIn, background: BackgroundTasks,
+             db: Session = Depends(get_db)):
     exists = (db.query(User)
                 .filter(func.lower(User.username) == payload.username.lower())
                 .first())
     if exists:
         raise HTTPException(409, "Такое имя уже занято")
+
     user = User(
         username=payload.username.strip(),
         password_hash=hash_password(payload.password),
+        email=str(payload.email) if payload.email else None,
         role="user",
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+
     log_action(db, user, "register", "user", user.id, user.username)
     db.commit()
+
+    if user.email and smtp_configured():
+        subject, text, html = render_welcome(user.username)
+        background.add_task(send_email, user.email, subject, text, html)
+
     return user
 
 
@@ -258,6 +370,38 @@ def logout(x_session_token: Optional[str] = Header(None),
 
 @app.get("/api/auth/me", response_model=UserOut)
 def me(user: User = Depends(require_user)):
+    return user
+
+
+@app.get("/api/auth/profile", response_model=UserOut)
+def get_profile(user: User = Depends(require_user)):
+    return user
+
+
+@app.put("/api/auth/profile", response_model=UserOut)
+def update_profile(payload: ProfileIn,
+                   db: Session = Depends(get_db),
+                   user: User = Depends(require_user)):
+    changes = {}
+    data = payload.model_dump(exclude_unset=True)
+
+    if "email" in data:
+        new_email = str(data["email"]) if data["email"] else None
+        if user.email != new_email:
+            changes["email"] = {"from": user.email, "to": new_email}
+            user.email = new_email
+
+    if "newsletter" in data and user.newsletter != data["newsletter"]:
+        changes["newsletter"] = {"from": user.newsletter, "to": data["newsletter"]}
+        user.newsletter = data["newsletter"]
+
+    if changes:
+        db.commit()
+        db.refresh(user)
+        log_action(db, user, "update_profile", "user", user.id, user.username,
+                   json.dumps(changes, ensure_ascii=False))
+        db.commit()
+
     return user
 
 
@@ -306,6 +450,72 @@ def list_logs(limit: int = Query(300, ge=1, le=1000),
         "details": r.details,
         "created_at": r.created_at.isoformat(),
     } for r in rows]
+
+
+# ---------------- newsletter (admin) ----------------
+@app.get("/api/newsletter/stats")
+def newsletter_stats(db: Session = Depends(get_db),
+                     _: User = Depends(require_admin)):
+    total = db.query(func.count(User.id)).scalar()
+    subscribed = (db.query(func.count(User.id))
+                    .filter(User.newsletter == True,
+                            User.email.isnot(None))
+                    .scalar())
+    return {
+        "total_users": total,
+        "subscribers": subscribed,
+        "smtp_ready": smtp_configured(),
+    }
+
+
+@app.post("/api/newsletter/send")
+def send_newsletter(payload: NewsletterIn,
+                    background: BackgroundTasks,
+                    db: Session = Depends(get_db),
+                    admin: User = Depends(require_admin)):
+    recipients = (db.query(User)
+                    .filter(User.newsletter == True,
+                            User.email.isnot(None))
+                    .all())
+
+    if not smtp_configured():
+        raise HTTPException(503, "SMTP не настроен. Добавь SMTP_HOST/PORT/USER/PASSWORD в переменные.")
+
+    if not recipients:
+        raise HTTPException(400, "Нет подписчиков с email")
+
+    emails = [u.email for u in recipients]
+
+    def deliver():
+        sent, failed = 0, 0
+        for addr in emails:
+            if send_email(addr, payload.subject, payload.body):
+                sent += 1
+            else:
+                failed += 1
+        print(f"[newsletter] отправлено: {sent}, ошибок: {failed}")
+
+    background.add_task(deliver)
+
+    log_action(db, admin, "newsletter", "user", None, payload.subject,
+               json.dumps({"recipients": len(emails)}, ensure_ascii=False))
+    db.commit()
+
+    return {"queued": len(emails)}
+
+
+@app.post("/api/newsletter/test")
+def newsletter_test(db: Session = Depends(get_db),
+                    admin: User = Depends(require_admin)):
+    if not admin.email:
+        raise HTTPException(400, "У тебя не указан email в профиле")
+    if not smtp_configured():
+        raise HTTPException(503, "SMTP не настроен")
+    ok = send_email(admin.email, "Тестовое письмо",
+                    "Если ты это читаешь — SMTP работает.")
+    if not ok:
+        raise HTTPException(500, "Не удалось отправить")
+    return {"ok": True}
 
 
 # ---------------- terms ----------------
