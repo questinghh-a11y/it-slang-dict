@@ -629,3 +629,178 @@ form input:focus, form textarea:focus {
   .blob { filter: blur(60px); }
   .log-filters input, .log-filters select { min-width: 0; flex: 1 1 120px; }
 }
+/* ---------- экран разделов ---------- */
+.categories-view,
+.terms-view {
+  animation: viewIn .4s cubic-bezier(.2,.9,.3,1.2);
+}
+@keyframes viewIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.section-head {
+  text-align: center;
+  margin: 20px 0 36px;
+  animation: fadeInUp .55s ease-out;
+}
+.section-head h2 {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 10px;
+}
+.section-head p {
+  color: var(--muted);
+  font-size: 14.5px;
+  letter-spacing: .2px;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.category-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 26px 22px 22px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  animation: cardIn .5s cubic-bezier(.2,.9,.3,1.2) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 190px;
+  transition: transform .35s cubic-bezier(.2,.9,.3,1.2),
+              border-color .25s,
+              box-shadow .35s,
+              background .25s;
+}
+.category-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 100% 0%, rgba(124,92,255,.18), transparent 60%);
+  opacity: 0;
+  transition: opacity .35s;
+  pointer-events: none;
+}
+.category-card::after {
+  content: "";
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  transition: left .7s ease;
+}
+.category-card:hover::before { opacity: 1; }
+.category-card:hover::after { left: 100%; }
+
+.category-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: rgba(124,92,255,.6);
+  box-shadow: 0 24px 60px rgba(124,92,255,.22), 0 4px 20px rgba(0,0,0,.35);
+}
+
+.category-card .cat-icon {
+  font-size: 42px;
+  line-height: 1;
+  filter: drop-shadow(0 6px 16px rgba(124,92,255,.3));
+  transition: transform .4s cubic-bezier(.2,.9,.3,1.2);
+  align-self: flex-start;
+}
+.category-card:hover .cat-icon {
+  transform: scale(1.18) rotate(-8deg);
+}
+
+.category-card .cat-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+  position: relative;
+  z-index: 1;
+}
+
+.category-card .cat-count {
+  color: var(--muted);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  margin-top: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.category-card .cat-arrow {
+  position: absolute;
+  bottom: 24px; right: 22px;
+  color: var(--accent-2);
+  font-size: 22px;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all .4s cubic-bezier(.2,.9,.3,1.2);
+  z-index: 1;
+}
+.category-card:hover .cat-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* ---------- экран терминов: шапка ---------- */
+.terms-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+  animation: fadeInUp .35s ease-out;
+}
+.terms-head h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin: 0;
+  background: linear-gradient(135deg, #fff, #a5b4fc);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.terms-head .count {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 5px 13px;
+  background: rgba(30,34,45,.6);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+.terms-head .btn.ghost {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+/* ---------- мобильная адаптация ---------- */
+@media (max-width: 720px) {
+  .section-head h2 { font-size: 26px; }
+  .categories-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+  .category-card {
+    min-height: 150px;
+    padding: 20px 16px 16px;
+    border-radius: 16px;
+  }
+  .category-card .cat-icon { font-size: 34px; }
+  .category-card .cat-name { font-size: 15px; }
+  .category-card .cat-arrow { display: none; }
+}

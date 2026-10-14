@@ -1,11 +1,27 @@
 const API = "/api";
 const TOKEN_KEY = "it_slang_token";
 
+const CATEGORY_ICONS = {
+  "Процесс разработки": "⚙️",
+  "Код и качество": "💻",
+  "Инфраструктура": "☁️",
+  "Команда и роли": "👥",
+  "Веб и API": "🌐",
+  "Базы данных": "🗄️",
+  "Безопасность": "🔒",
+  "Тестирование": "🧪",
+  "Git": "🌿",
+  "Data Science / ML": "🤖",
+  "Мобильная разработка": "📱",
+  "Сети": "📡",
+};
+
 const state = {
   terms: [],
   categories: [],
   activeCategory: null,
   search: "",
+  view: "categories",     // "categories" | "terms"
   editingId: null,
   viewingTerm: null,
   token: localStorage.getItem(TOKEN_KEY) || null,
@@ -24,7 +40,6 @@ const $ = (sel) => document.querySelector(sel);
 const grid = $("#grid");
 const status = $("#status");
 const searchInput = $("#search");
-const categoriesNav = $("#categories");
 
 function toast(message, type = "info", timeout = 3500) {
   const box = $("#toasts");
@@ -110,7 +125,7 @@ function logout(silent = false) {
   }
   setSession(null, null);
   if (!silent) toast("Вы вышли из аккаунта", "info");
-  loadTerms();
+  refreshView();
 }
 
 async function restoreSession() {
@@ -126,35 +141,115 @@ async function restoreSession() {
   }
 }
 
+// ---------- переключение экранов ----------
+function showView(view) {
+  state.view = view;
+  $("#categoriesView").classList.toggle("hidden", view !== "categories");
+  $("#termsView").classList.toggle("hidden", view !== "terms");
+}
+
+async function refreshView() {
+  // 1. Поиск — всегда показываем термины
+  if (state.search) {
+    showView("terms");
+    $("#backToCategoriesBtn").classList.add("hidden");
+    $("#termsHeadTitle").textContent = `Поиск: «${state.search}»`;
+    $("#termsHeadCount").textContent = "";
+    await loadTerms();
+    return;
+  }
+
+  // 2. Открыта категория — показываем её термины
+  if (state.activeCategory) {
+    showView("terms");
+    $("#backToCategoriesBtn").classList.remove("hidden");
+    $("#termsHeadTitle").textContent = state.activeCategory;
+    await loadTerms();
+    return;
+  }
+
+  // 3. Иначе — экран разделов
+  showView("categories");
+  await loadCategories();
+  renderCategoriesView();
+}
+
+// ---------- данные ----------
+async function loadCategories() {
+  try {
+    state.categories = await api("/categories");
+    fillCategoryDatalist();
+  } catch (e) { /* тихо */ }
+}
+
 async function loadTerms() {
   const params = new URLSearchParams();
   if (state.search) params.set("q", state.search);
-  if (state.activeCategory) params.set("category", state.activeCategory);
+  if (state.activeCategory && !state.search) params.set("category", state.activeCategory);
   params.set("limit", "500");
 
   status.textContent = "Загружаю…";
   grid.innerHTML = "";
+
   try {
     const data = await api("/terms?" + params);
     state.terms = data.items;
     renderGrid();
-    status.textContent = data.total === 0
-      ? "Ничего не найдено."
-      : `Найдено: ${data.total}`;
+
+    if (data.total === 0) {
+      status.textContent = "Ничего не найдено.";
+      $("#termsHeadCount").textContent = "";
+    } else {
+      status.textContent = "";
+      $("#termsHeadCount").textContent =
+        `${data.total} ${pluralTerms(data.total)}`;
+    }
   } catch (e) {
     status.textContent = "Ошибка: " + e.message;
     toast(e.message, "error");
   }
 }
 
-async function loadCategories() {
-  try {
-    state.categories = await api("/categories");
-    renderCategories();
-    fillCategoryDatalist();
-  } catch (e) { /* тихо */ }
+// ---------- отрисовка: разделы ----------
+function renderCategoriesView() {
+  const box = $("#categoriesGrid");
+  box.innerHTML = "";
+
+  state.categories.forEach((c, i) => {
+    const card = document.createElement("div");
+    card.className = "category-card";
+    card.style.setProperty("--i", Math.min(i, 30));
+
+    const icon = CATEGORY_ICONS[c.name] || "📁";
+
+    card.innerHTML = `
+      <div class="cat-icon">${icon}</div>
+      <div class="cat-name">${escapeHtml(c.name)}</div>
+      <div class="cat-count">${c.count} ${pluralTerms(c.count)}</div>
+      <div class="cat-arrow">→</div>
+    `;
+
+    card.onclick = () => {
+      state.activeCategory = c.name;
+      state.search = "";
+      searchInput.value = "";
+      refreshView();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    box.appendChild(card);
+  });
 }
 
+function pluralTerms(n) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return "термин";
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "термина";
+  return "терминов";
+}
+
+// ---------- отрисовка: термины ----------
 function renderGrid() {
   grid.innerHTML = "";
   state.terms.forEach((t, i) => {
@@ -201,27 +296,6 @@ function renderGrid() {
   });
 }
 
-function renderCategories() {
-  categoriesNav.innerHTML = "";
-  const all = document.createElement("button");
-  all.className = "cat-chip" + (state.activeCategory === null ? " active" : "");
-  all.textContent = "Все";
-  all.onclick = () => { state.activeCategory = null; loadTerms(); renderCategories(); };
-  categoriesNav.appendChild(all);
-
-  state.categories.forEach((c) => {
-    const chip = document.createElement("button");
-    chip.className = "cat-chip" + (state.activeCategory === c.name ? " active" : "");
-    chip.innerHTML = `${escapeHtml(c.name)}<span class="count">${c.count}</span>`;
-    chip.onclick = () => {
-      state.activeCategory = c.name;
-      loadTerms();
-      renderCategories();
-    };
-    categoriesNav.appendChild(chip);
-  });
-}
-
 function fillCategoryDatalist() {
   const dl = $("#catList");
   dl.innerHTML = "";
@@ -238,6 +312,7 @@ function escapeHtml(str) {
   })[s]);
 }
 
+// ---------- модалки ----------
 function openModal(id) { $(id).classList.remove("hidden"); }
 
 function openView(term) {
@@ -293,8 +368,7 @@ async function submitForm(e) {
       toast("Термин добавлен", "success");
     }
     closeAll();
-    await loadCategories();
-    await loadTerms();
+    await afterTermChange();
   } catch (err) { toast("Не удалось сохранить: " + err.message, "error"); }
 }
 
@@ -304,9 +378,17 @@ async function deleteTerm(term) {
   try {
     await api("/terms/" + term.id, { method: "DELETE" });
     toast("Термин удалён", "success");
-    await loadCategories();
-    await loadTerms();
+    await afterTermChange();
   } catch (err) { toast("Не удалось удалить: " + err.message, "error"); }
+}
+
+async function afterTermChange() {
+  await loadCategories();
+  if (state.view === "categories") {
+    renderCategoriesView();
+  } else {
+    await loadTerms();
+  }
 }
 
 async function submitLogin(e) {
@@ -319,7 +401,7 @@ async function submitLogin(e) {
     });
     setSession(data.token, data.user);
     closeAll();
-    await loadTerms();
+    refreshView();
     toast(`Добро пожаловать, ${data.user.username}!`, "success");
   } catch (err) { toast(err.message, "error"); }
 }
@@ -342,7 +424,7 @@ async function submitRegister(e) {
     });
     setSession(data.token, data.user);
     closeAll();
-    await loadTerms();
+    refreshView();
     toast(`Аккаунт создан. Привет, ${data.user.username}!`, "success");
   } catch (err) { toast(err.message, "error"); }
 }
@@ -458,8 +540,6 @@ async function loadLogsPage(reset = false) {
 
   try {
     const data = await api("/logs?" + params);
-
-    // защита: старый API отдавал массив, новый — объект {total, items}
     const items = Array.isArray(data) ? data : (data?.items || []);
     const total = Array.isArray(data) ? data.length : (data?.total || 0);
 
@@ -583,8 +663,19 @@ searchInput.addEventListener("input", (e) => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     state.search = e.target.value.trim();
-    loadTerms();
+    if (state.search) {
+      state.activeCategory = null;
+    }
+    refreshView();
   }, 250);
+});
+
+$("#backToCategoriesBtn").addEventListener("click", () => {
+  state.activeCategory = null;
+  state.search = "";
+  searchInput.value = "";
+  refreshView();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
 $("#addBtn").addEventListener("click", () => openForm());
@@ -639,6 +730,5 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll()
   attachRipple();
   await restoreSession();
   updateAuthUI();
-  await loadCategories();
-  await loadTerms();
+  await refreshView();
 })();

@@ -45,11 +45,27 @@
   </div>
 </header>
 
-<nav id="categories" class="categories"></nav>
-
 <main>
   <div id="status" class="status"></div>
-  <section id="grid" class="grid"></section>
+
+  <!-- Экран разделов -->
+  <section id="categoriesView" class="categories-view">
+    <div class="section-head">
+      <h2>Разделы словаря</h2>
+      <p>Выбери раздел, чтобы посмотреть термины</p>
+    </div>
+    <div id="categoriesGrid" class="categories-grid"></div>
+  </section>
+
+  <!-- Экран терминов -->
+  <section id="termsView" class="terms-view hidden">
+    <div class="terms-head">
+      <button id="backToCategoriesBtn" class="btn ghost">← Все разделы</button>
+      <h2 id="termsHeadTitle"></h2>
+      <span id="termsHeadCount" class="count"></span>
+    </div>
+    <section id="grid" class="grid"></section>
+  </section>
 </main>
 
 <!-- Просмотр термина -->
