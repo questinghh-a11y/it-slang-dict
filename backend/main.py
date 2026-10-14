@@ -1,25 +1,16 @@
 
+"""
+Онлайн-словарь ИТ-сленга — бэкенд.
+Локально:  uvicorn main:app --reload --port 8000
+На Render: читает DATABASE_URL из переменных окружения.
+"""
 from __future__ import annotations
 
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
-import random
-
-from fastapi import FastAPI, HTTPException, Query, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
-from sqlalchemy import (create_engine, Column, Integer, String, Text,
-                        DateTime, func, or_)
-from sqlalchemy.orm import declarative_base, sessionmaker, Session
-
 import os
-
+import random
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-import random
 
 from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,11 +20,13 @@ from sqlalchemy import (create_engine, Column, Integer, String, Text,
                         DateTime, func, or_)
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-# --- пути и БД ---
+
+# ---------------- пути и подключение к БД ----------------
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR.parent / "frontend"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR / 'slang.db'}")
+
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -46,7 +39,8 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 Base = declarative_base()
 
-# --- модель БД ---
+
+# ---------------- модель БД ----------------
 class Term(Base):
     __tablename__ = "terms"
 
@@ -63,7 +57,7 @@ class Term(Base):
 Base.metadata.create_all(engine)
 
 
-# ---------------- схемы ----------------
+# ---------------- схемы Pydantic ----------------
 class TermBase(BaseModel):
     term: str = Field(..., min_length=1, max_length=200)
     definition: str = Field(..., min_length=1)
@@ -113,7 +107,7 @@ app.add_middleware(
 )
 
 
-# ---------------- эндпоинты ----------------
+# ---------------- эндпоинты API ----------------
 @app.get("/api/terms")
 def list_terms(
     q: Optional[str] = Query(None),
@@ -207,7 +201,6 @@ def random_term(db: Session = Depends(get_db)):
 
 # ---------------- стартовые данные ----------------
 SEED = [
-    # Процесс разработки
     {"term": "Спринт", "category": "Процесс разработки",
      "definition": "Короткий фиксированный отрезок времени (обычно 1–2 недели), за который команда должна доделать выбранный набор задач.",
      "example": "В этом спринте взяли три задачи по авторизации и одну по логам."},
@@ -232,8 +225,6 @@ SEED = [
     {"term": "Ретро", "category": "Процесс разработки",
      "definition": "Ретроспектива — встреча после спринта, где команда обсуждает, что было хорошо, что плохо и что менять.",
      "example": "На ретро решили не брать больше трёх задач за спринт."},
-
-    # Код и качество
     {"term": "Баг", "category": "Код и качество",
      "definition": "Ошибка в программе, из-за которой она работает не так, как ожидалось.",
      "example": "Поймал баг: кнопка не работает, если поле пустое."},
@@ -264,8 +255,6 @@ SEED = [
     {"term": "Линтер", "category": "Код и качество",
      "definition": "Инструмент, который автоматически проверяет код на стиль, ошибки и подозрительные места.",
      "example": "Линтер ругается на неиспользуемую переменную."},
-
-    # Инфраструктура
     {"term": "Сервер", "category": "Инфраструктура",
      "definition": "Компьютер (или программа), который принимает запросы и отдаёт ответы. Может быть железный или виртуальный.",
      "example": "Упал сервер — половина клиентов не смогла залогиниться."},
@@ -290,8 +279,6 @@ SEED = [
     {"term": "Даунтайм", "category": "Инфраструктура",
      "definition": "Время, когда сервис недоступен. Обратное — аптайм.",
      "example": "После обновления был короткий даунтайм на 30 секунд."},
-
-    # Команда и роли
     {"term": "Тимлид", "category": "Команда и роли",
      "definition": "Team Lead — руководитель команды разработчиков. Раздаёт задачи, отвечает за результат и рост людей.",
      "example": "Тимлид сказал: разбираем задачу вместе."},
@@ -310,8 +297,6 @@ SEED = [
     {"term": "Шеринг", "category": "Команда и роли",
      "definition": "Демонстрация сделанного коллегам — короткий доклад в конце спринта.",
      "example": "На шеринге показал, что успели за две недели."},
-
-    # Веб и API
     {"term": "Фронтенд", "category": "Веб и API",
      "definition": "Часть приложения, которую видит пользователь. Работает в браузере: HTML, CSS, JavaScript.",
      "example": "Кнопку поправит фронтенд, а логику — бэкенд."},
@@ -354,5 +339,6 @@ def seed_if_empty():
 
 seed_if_empty()
 
-# статику подключаем последней, чтобы /api/* имели приоритет
+
+# ---------------- статика (должна быть последней) ----------------
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
