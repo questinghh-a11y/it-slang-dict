@@ -18,6 +18,36 @@ const status = $("#status");
 const searchInput = $("#search");
 const categoriesNav = $("#categories");
 
+// ---------- тосты ----------
+function toast(message, type = "info", timeout = 3500) {
+  const box = $("#toasts");
+  const el = document.createElement("div");
+  el.className = "toast " + type;
+  el.textContent = message;
+  box.appendChild(el);
+  setTimeout(() => {
+    el.classList.add("leaving");
+    setTimeout(() => el.remove(), 300);
+  }, timeout);
+}
+
+// ---------- ripple ----------
+function attachRipple() {
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn");
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    const size = Math.max(rect.width, rect.height);
+    const ripple = document.createElement("span");
+    ripple.className = "ripple";
+    ripple.style.width = ripple.style.height = size + "px";
+    ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
+    ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
+    btn.appendChild(ripple);
+    setTimeout(() => ripple.remove(), 600);
+  });
+}
+
 // ---------- сеть ----------
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -75,7 +105,7 @@ function logout(silent = false) {
     }).catch(() => {});
   }
   setSession(null, null);
-  if (!silent) status.textContent = "Вы вышли.";
+  if (!silent) toast("Вы вышли из аккаунта", "info");
   loadTerms();
 }
 
@@ -108,7 +138,10 @@ async function loadTerms() {
     status.textContent = data.total === 0
       ? "Ничего не найдено."
       : `Найдено: ${data.total}`;
-  } catch (e) { status.textContent = "Ошибка: " + e.message; }
+  } catch (e) {
+    status.textContent = "Ошибка: " + e.message;
+    toast(e.message, "error");
+  }
 }
 
 async function loadCategories() {
@@ -122,9 +155,10 @@ async function loadCategories() {
 // ---------- отрисовка ----------
 function renderGrid() {
   grid.innerHTML = "";
-  for (const t of state.terms) {
+  state.terms.forEach((t, i) => {
     const card = document.createElement("article");
     card.className = "card";
+    card.style.setProperty("--i", Math.min(i, 30));
 
     const badge = document.createElement("span");
     badge.className = "badge";
@@ -143,7 +177,6 @@ function renderGrid() {
       openView(t);
     };
 
-    // Показываем действия, если: админ — на любой термин, юзер — только на свои.
     const canEdit = isAdmin() || (state.user && t.created_by === state.user.username);
     if (canEdit) {
       const actions = document.createElement("div");
@@ -151,7 +184,7 @@ function renderGrid() {
 
       const editBtn = document.createElement("button");
       editBtn.className = "btn ghost";
-      editBtn.textContent = "✏ Редактировать";
+      editBtn.textContent = "✏ Изменить";
       editBtn.onclick = (e) => { e.stopPropagation(); openForm(t); };
 
       const delBtn = document.createElement("button");
@@ -164,7 +197,7 @@ function renderGrid() {
     }
 
     grid.appendChild(card);
-  }
+  });
 }
 
 function renderCategories() {
@@ -175,7 +208,7 @@ function renderCategories() {
   all.onclick = () => { state.activeCategory = null; loadTerms(); renderCategories(); };
   categoriesNav.appendChild(all);
 
-  for (const c of state.categories) {
+  state.categories.forEach((c) => {
     const chip = document.createElement("button");
     chip.className = "cat-chip" + (state.activeCategory === c.name ? " active" : "");
     chip.innerHTML = `${escapeHtml(c.name)}<span class="count">${c.count}</span>`;
@@ -185,17 +218,17 @@ function renderCategories() {
       renderCategories();
     };
     categoriesNav.appendChild(chip);
-  }
+  });
 }
 
 function fillCategoryDatalist() {
   const dl = $("#catList");
   dl.innerHTML = "";
-  for (const c of state.categories) {
+  state.categories.forEach((c) => {
     const opt = document.createElement("option");
     opt.value = c.name;
     dl.appendChild(opt);
-  }
+  });
 }
 
 function escapeHtml(str) {
@@ -227,7 +260,7 @@ function openView(term) {
 }
 
 function openForm(term = null) {
-  if (!isLoggedIn()) { alert("Войдите, чтобы добавлять термины."); return; }
+  if (!isLoggedIn()) { toast("Войдите, чтобы добавлять термины.", "warn"); return; }
   state.editingId = term ? term.id : null;
   $("#formTitle").textContent = term ? "Редактировать термин" : "Новый термин";
   const form = $("#termForm");
@@ -254,22 +287,25 @@ async function submitForm(e) {
   try {
     if (state.editingId) {
       await api("/terms/" + state.editingId, { method: "PUT", body: JSON.stringify(payload) });
+      toast("Термин обновлён", "success");
     } else {
       await api("/terms", { method: "POST", body: JSON.stringify(payload) });
+      toast("Термин добавлен", "success");
     }
     closeAll();
     await loadCategories();
     await loadTerms();
-  } catch (err) { alert("Не получилось сохранить: " + err.message); }
+  } catch (err) { toast("Не удалось сохранить: " + err.message, "error"); }
 }
 
 async function deleteTerm(term) {
   if (!confirm(`Удалить термин «${term.term}»?`)) return;
   try {
     await api("/terms/" + term.id, { method: "DELETE" });
+    toast("Термин удалён", "success");
     await loadCategories();
     await loadTerms();
-  } catch (err) { alert("Не получилось удалить: " + err.message); }
+  } catch (err) { toast("Не удалось удалить: " + err.message, "error"); }
 }
 
 async function submitLogin(e) {
@@ -283,8 +319,8 @@ async function submitLogin(e) {
     setSession(data.token, data.user);
     closeAll();
     await loadTerms();
-    status.textContent = `Добро пожаловать, ${data.user.username}!`;
-  } catch (err) { alert(err.message); }
+    toast(`Добро пожаловать, ${data.user.username}!`, "success");
+  } catch (err) { toast(err.message, "error"); }
 }
 
 async function submitRegister(e) {
@@ -295,7 +331,6 @@ async function submitRegister(e) {
       method: "POST",
       body: JSON.stringify({ username: f.username.value, password: f.password.value }),
     });
-    // сразу логинимся
     const data = await api("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username: f.username.value, password: f.password.value }),
@@ -303,8 +338,8 @@ async function submitRegister(e) {
     setSession(data.token, data.user);
     closeAll();
     await loadTerms();
-    status.textContent = `Аккаунт создан. Добро пожаловать, ${data.user.username}!`;
-  } catch (err) { alert(err.message); }
+    toast(`Аккаунт создан. Привет, ${data.user.username}!`, "success");
+  } catch (err) { toast(err.message, "error"); }
 }
 
 async function openLogs() {
@@ -312,9 +347,10 @@ async function openLogs() {
     const rows = await api("/logs?limit=300");
     const box = $("#logsList");
     box.innerHTML = "";
-    for (const r of rows) {
+    rows.forEach((r, i) => {
       const div = document.createElement("div");
       div.className = "log-row";
+      div.style.setProperty("--i", Math.min(i, 30));
       const details = r.details ? `<div class="log-details">${escapeHtml(r.details)}</div>` : "";
       const target = r.target_name ? ` · ${escapeHtml(r.target_name)}` : "";
       div.innerHTML = `
@@ -325,9 +361,9 @@ async function openLogs() {
         ${details}
       `;
       box.appendChild(div);
-    }
+    });
     openModal("#logsModal");
-  } catch (e) { alert("Не удалось загрузить журнал: " + e.message); }
+  } catch (e) { toast("Не удалось загрузить журнал: " + e.message, "error"); }
 }
 
 async function openUsers() {
@@ -335,9 +371,10 @@ async function openUsers() {
     const users = await api("/users");
     const box = $("#usersList");
     box.innerHTML = "";
-    for (const u of users) {
+    users.forEach((u, i) => {
       const row = document.createElement("div");
       row.className = "user-row";
+      row.style.setProperty("--i", Math.min(i, 30));
       row.innerHTML = `
         <div>
           <div class="user-name">${escapeHtml(u.username)}</div>
@@ -354,16 +391,16 @@ async function openUsers() {
             method: "PUT",
             body: JSON.stringify({ role: e.target.value }),
           });
-          status.textContent = `Роль ${u.username} изменена.`;
+          toast(`Роль ${u.username} изменена`, "success");
         } catch (err) {
-          alert(err.message);
+          toast(err.message, "error");
           e.target.value = u.role;
         }
       };
       box.appendChild(row);
-    }
+    });
     openModal("#usersModal");
-  } catch (e) { alert("Не удалось загрузить пользователей: " + e.message); }
+  } catch (e) { toast("Не удалось загрузить пользователей: " + e.message, "error"); }
 }
 
 function closeAll() {
@@ -408,7 +445,7 @@ $("#randomBtn").addEventListener("click", async () => {
   try {
     const t = await api("/random");
     openView(t);
-  } catch (e) { alert(e.message); }
+  } catch (e) { toast(e.message, "error"); }
 });
 
 document.querySelectorAll("[data-close]").forEach(el =>
@@ -419,6 +456,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll()
 
 // ---------- старт ----------
 (async function init() {
+  attachRipple();
   await restoreSession();
   updateAuthUI();
   await loadCategories();
