@@ -1,0 +1,230 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1117;
+  --panel: #171a23;
+  --panel-2: #1e222d;
+  --border: #2a2f3d;
+  --text: #e6e9ef;
+  --muted: #8b93a7;
+  --accent: #7c5cff;
+  --accent-2: #22d3ee;
+  --danger: #ef4444;
+  --ok: #22c55e;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, #1a1440 0%, transparent 60%),
+              radial-gradient(1000px 500px at 90% 10%, #07323a 0%, transparent 55%),
+              var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding-bottom: 60px;
+}
+
+/* шапка */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(15,17,23,0.7);
+  backdrop-filter: blur(8px);
+  position: sticky; top: 0; z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--accent-2);
+  background: var(--panel-2);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.brand h1 { font-size: 20px; font-weight: 700; }
+.subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+#search {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  width: 320px;
+  outline: none;
+  transition: border-color .15s;
+}
+#search:focus { border-color: var(--accent); }
+
+/* кнопки */
+.btn {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+.btn.primary { background: linear-gradient(135deg, var(--accent), #5b3fd6); border-color: transparent; font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.1); }
+.btn.ghost { background: transparent; }
+.btn.danger { color: var(--danger); border-color: rgba(239,68,68,.4); }
+.btn.danger:hover { background: rgba(239,68,68,.1); border-color: var(--danger); }
+
+/* категории */
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px 32px 4px;
+}
+.cat-chip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.cat-chip:hover { color: var(--text); }
+.cat-chip.active {
+  background: linear-gradient(135deg, var(--accent), #5b3fd6);
+  color: #fff;
+  border-color: transparent;
+}
+.cat-chip .count { opacity: .65; margin-left: 6px; font-size: 12px; }
+
+/* сетка */
+main { padding: 20px 32px; }
+.status { color: var(--muted); font-size: 14px; padding: 8px 0 16px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all .18s;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.card:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px rgba(124,92,255,.15);
+}
+.card h3 { font-size: 17px; font-weight: 700; }
+.card .short {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--accent-2);
+  background: rgba(34,211,238,.08);
+  border: 1px solid rgba(34,211,238,.25);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+/* модалки */
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(6,8,12,.75);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; z-index: 100;
+}
+.modal.hidden { display: none; }
+.modal-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 28px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: pop .18s ease-out;
+}
+@keyframes pop {
+  from { transform: scale(.96); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.modal-card h2 { font-size: 22px; margin: 12px 0 14px; }
+.definition { line-height: 1.65; color: #cdd3e0; }
+.example-wrap {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--panel-2);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+}
+.example-wrap .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.example-wrap p { margin-top: 6px; font-style: italic; color: #b9c0d0; }
+
+.close {
+  position: absolute; top: 14px; right: 16px;
+  background: transparent; border: none;
+  color: var(--muted); font-size: 26px; cursor: pointer;
+  line-height: 1; padding: 4px 8px; border-radius: 6px;
+}
+.close:hover { color: var(--text); background: var(--panel-2); }
+
+/* форма */
+#termForm { display: flex; flex-direction: column; gap: 14px; }
+#termForm label {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 13px; color: var(--muted);
+}
+#termForm input, #termForm textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+}
+#termForm input:focus, #termForm textarea:focus { border-color: var(--accent); }
+
+.modal-actions {
+  display: flex; gap: 10px; justify-content: flex-end;
+  margin-top: 20px;
+}
+
+@media (max-width: 640px) {
+  .topbar { padding: 16px; }
+  #search { width: 100%; }
+  .controls { width: 100%; }
+  main, .categories { padding-left: 16px; padding-right: 16px; }
+}

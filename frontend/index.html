@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Словарь ИТ-сленга</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">&lt;/&gt;</span>
+    <div>
+      <h1>Словарь ИТ-сленга</h1>
+      <p class="subtitle">Говори как разработчик</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <input id="search" type="search" placeholder="Поиск термина или определения…" autocomplete="off">
+    <button id="randomBtn" class="btn ghost" title="Случайный термин">🎲</button>
+    <button id="addBtn" class="btn primary">+ Добавить</button>
+  </div>
+</header>
+
+<nav id="categories" class="categories"></nav>
+
+<main>
+  <div id="status" class="status"></div>
+  <section id="grid" class="grid"></section>
+</main>
+
+<!-- Модалка: просмотр термина -->
+<div id="viewModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="close" data-close>&times;</button>
+    <span class="badge" id="viewCategory"></span>
+    <h2 id="viewTerm"></h2>
+    <p id="viewDefinition" class="definition"></p>
+    <div id="viewExampleWrap" class="example-wrap">
+      <span class="label">Пример:</span>
+      <p id="viewExample"></p>
+    </div>
+    <div class="modal-actions">
+      <button id="editBtn" class="btn ghost">Редактировать</button>
+      <button id="deleteBtn" class="btn danger">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка: форма -->
+<div id="formModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="close" data-close>&times;</button>
+    <h2 id="formTitle">Новый термин</h2>
+    <form id="termForm">
+      <label>Термин *<input name="term" required maxlength="200"></label>
+      <label>Категория *
+        <input name="category" required list="catList" maxlength="80">
+        <datalist id="catList"></datalist>
+      </label>
+      <label>Определение *
+        <textarea name="definition" required rows="4"></textarea>
+      </label>
+      <label>Пример
+        <textarea name="example" rows="2"></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-close>Отмена</button>
+        <button type="submit" class="btn primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
