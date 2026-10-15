@@ -299,6 +299,7 @@ function function renderGrid() {
     grid.appendChild(card);
   });
 }
+
 function popSticker(el, emoji) {
   const rect = el.getBoundingClientRect();
   const fly = document.createElement("div");
