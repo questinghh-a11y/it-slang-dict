@@ -29,7 +29,9 @@ body {
   padding-bottom: 60px;
 }
 
-/* ---------------- шапка ---------------- */
+/* =========================================================
+   ШАПКА
+   ========================================================= */
 
 .topbar {
   display: flex;
@@ -77,7 +79,9 @@ body {
 }
 #search:focus { border-color: var(--accent); }
 
-/* ---------------- кнопки ---------------- */
+/* =========================================================
+   КНОПКИ
+   ========================================================= */
 
 .btn {
   border: 1px solid var(--border);
@@ -101,7 +105,9 @@ body {
 .btn.danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.4); }
 .btn.danger:hover { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); }
 
-/* ---------------- категории (чипы) ---------------- */
+/* =========================================================
+   ЧИПЫ КАТЕГОРИЙ (горизонтальная полоса фильтров под шапкой)
+   ========================================================= */
 
 .categories {
   display: flex;
@@ -130,6 +136,11 @@ body {
   color: #fff;
   border-color: transparent;
 }
+.cat-chip .count {
+  opacity: 0.65;
+  margin-left: 6px;
+  font-size: 12px;
+}
 
 .chip-icon {
   display: inline-flex;
@@ -138,16 +149,236 @@ body {
   font-size: 15px;
   line-height: 1;
 }
-
 .chip-label { line-height: 1; }
 
-.cat-chip .count {
-  opacity: 0.65;
-  margin-left: 6px;
-  font-size: 12px;
+/* =========================================================
+   СТРАНИЦА «РАЗДЕЛЫ СЛОВАРЯ» — карточки категорий
+   =========================================================
+   Внимание: ниже селекторы перечислены через запятую,
+   чтобы поймать любой из возможных вариантов классов.
+   Когда узнаешь, какие классы у тебя реально используются —
+   оставь только их, остальные удали.
+   ========================================================= */
+
+/* заголовок страницы */
+.sections-title,
+.categories-title,
+.page-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 24px 32px 6px;
 }
 
-/* ---------------- сетка терминов ---------------- */
+.sections-subtitle,
+.categories-subtitle,
+.page-subtitle {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0 32px 20px;
+}
+
+/* контейнер списка разделов */
+.cat-list,
+.category-list,
+.categories-list,
+.sections-list,
+.categories-view,
+.sections-view {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 32px 24px;
+  max-width: 900px;
+}
+
+/* одна карточка раздела */
+.cat-card,
+.category-card,
+.section-card,
+.cat-item,
+.category-item,
+.section-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s;
+  animation: card-in 0.3s ease-out both;
+}
+
+.cat-card:hover,
+.category-card:hover,
+.section-card:hover,
+.cat-item:hover,
+.category-item:hover,
+.section-item:hover {
+  border-color: var(--accent);
+  transform: translateX(4px);
+  box-shadow: 0 6px 24px rgba(124, 92, 255, 0.12);
+}
+
+/* иконка раздела */
+.cat-card .cat-icon,
+.category-card .cat-icon,
+.section-card .cat-icon,
+.cat-item .cat-icon,
+.category-item .cat-icon,
+.section-item .cat-icon,
+.cat-card .category-icon,
+.category-card .category-icon,
+.section-card .category-icon,
+.cat-item .category-icon,
+.category-item .category-icon,
+.section-item .category-icon,
+.cat-card .section-icon,
+.category-card .section-icon,
+.section-card .section-icon,
+.cat-item .section-icon,
+.category-item .section-icon,
+.section-item .section-icon {
+  font-size: 24px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid rgba(124, 92, 255, 0.25);
+  border-radius: 10px;
+}
+
+/* название раздела */
+.cat-card .cat-name,
+.category-card .cat-name,
+.section-card .cat-name,
+.cat-item .cat-name,
+.category-item .cat-name,
+.section-item .cat-name,
+.cat-card .cat-title,
+.category-card .cat-title,
+.section-card .cat-title,
+.cat-item .cat-title,
+.category-item .cat-title,
+.section-item .cat-title,
+.cat-card .section-name,
+.category-card .section-name,
+.section-card .section-name,
+.cat-item .section-name,
+.category-item .section-name,
+.section-item .section-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* счётчик терминов */
+.cat-card .cat-count,
+.category-card .cat-count,
+.section-card .cat-count,
+.cat-item .cat-count,
+.category-item .cat-count,
+.section-item .cat-count,
+.cat-card .count,
+.category-card .count,
+.section-card .count,
+.cat-item .count,
+.category-item .count,
+.section-item .count,
+.cat-card .section-count,
+.category-card .section-count,
+.section-card .section-count,
+.cat-item .section-count,
+.category-item .section-count,
+.section-item .section-count {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* стрелка справа */
+.cat-card .cat-arrow,
+.category-card .cat-arrow,
+.section-card .cat-arrow,
+.cat-item .cat-arrow,
+.category-item .cat-arrow,
+.section-item .cat-arrow,
+.cat-card .arrow,
+.category-card .arrow,
+.section-card .arrow,
+.cat-item .arrow,
+.category-item .arrow,
+.section-item .arrow,
+.cat-card .section-arrow,
+.category-card .section-arrow,
+.section-card .section-arrow,
+.cat-item .section-arrow,
+.category-item .section-arrow,
+.section-item .section-arrow {
+  color: var(--accent-2);
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform 0.18s;
+}
+
+.cat-card:hover .cat-arrow,
+.category-card:hover .cat-arrow,
+.section-card:hover .cat-arrow,
+.cat-item:hover .cat-arrow,
+.category-item:hover .cat-arrow,
+.section-item:hover .cat-arrow,
+.cat-card:hover .arrow,
+.category-card:hover .arrow,
+.section-card:hover .arrow,
+.cat-item:hover .arrow,
+.category-item:hover .arrow,
+.section-item:hover .arrow,
+.cat-card:hover .section-arrow,
+.category-card:hover .section-arrow,
+.section-card:hover .section-arrow,
+.cat-item:hover .section-arrow,
+.category-item:hover .section-arrow,
+.section-item:hover .section-arrow {
+  transform: translateX(4px);
+}
+
+/* кнопка «← Все разделы» */
+.back-btn,
+.back-link,
+.back-to-categories {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 20px 32px 4px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.back-btn:hover,
+.back-link:hover,
+.back-to-categories:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
+}
+
+/* =========================================================
+   СЕТКА ТЕРМИНОВ
+   ========================================================= */
 
 main { padding: 20px 32px; }
 
@@ -192,8 +423,7 @@ main { padding: 20px 32px; }
   overflow: hidden;
 }
 
-/* ---------------- шапка карточки ---------------- */
-
+/* шапка карточки термина: иконка + бейдж */
 .card-head {
   display: flex;
   align-items: center;
@@ -202,7 +432,6 @@ main { padding: 20px 32px; }
   margin-bottom: 4px;
 }
 
-/* иконка-эмодзи категории */
 .card-icon {
   display: inline-flex;
   align-items: center;
@@ -224,7 +453,6 @@ main { padding: 20px 32px; }
   border-color: var(--accent);
 }
 
-/* бейдж категории */
 .badge {
   display: inline-block;
   align-self: flex-start;
@@ -239,7 +467,9 @@ main { padding: 20px 32px; }
   white-space: nowrap;
 }
 
-/* ---------------- стикер-ряд реакций ---------------- */
+/* =========================================================
+   СТИКЕР-РЯД РЕАКЦИЙ
+   ========================================================= */
 
 .sticker-row {
   display: flex;
@@ -279,7 +509,9 @@ main { padding: 20px 32px; }
 }
 .sticker:active { transform: scale(0.9); }
 
-/* ---------------- модалки ---------------- */
+/* =========================================================
+   МОДАЛКИ
+   ========================================================= */
 
 .modal {
   position: fixed;
@@ -350,7 +582,9 @@ main { padding: 20px 32px; }
 }
 .close:hover { color: var(--text); background: var(--panel-2); }
 
-/* ---------------- форма ---------------- */
+/* =========================================================
+   ФОРМА
+   ========================================================= */
 
 #termForm { display: flex; flex-direction: column; gap: 14px; }
 
@@ -387,8 +621,6 @@ main { padding: 20px 32px; }
 /* =========================================================
    АНИМАЦИИ
    ========================================================= */
-
-/* ---------- ключевые кадры ---------- */
 
 @keyframes icon-spin {
   from { transform: rotate(0deg); }
@@ -427,8 +659,7 @@ main { padding: 20px 32px; }
   50%      { box-shadow: 0 0 0 6px rgba(124, 92, 255, 0); }
 }
 
-/* ---------- анимации иконок по категориям ---------- */
-
+/* анимации иконок в карточках терминов по категориям */
 .card-icon[data-cat="Процесс разработки"] { animation: icon-spin   9s  linear infinite; }
 .card-icon[data-cat="Код и качество"]     { animation: icon-wiggle 2.4s ease-in-out infinite; }
 .card-icon[data-cat="Инфраструктура"]     { animation: icon-pulse  2.2s ease-in-out infinite; }
@@ -443,15 +674,12 @@ main { padding: 20px 32px; }
 .card-icon[data-cat="Мобильная разработка"] { animation: icon-bob    2.8s ease-in-out infinite; }
 .card-icon[data-cat="Сети"]                 { animation: icon-spin   14s  linear infinite; }
 
-/* ускорение анимации на наведении */
 .card:hover .card-icon { animation-duration: 1s !important; }
 
-/* ---------- пульсация активного чипа ---------- */
-
+/* пульсация активного чипа */
 .cat-chip.active { animation: chip-glow 2.4s ease-in-out infinite; }
 
-/* ---------- блик по карточке ---------- */
-
+/* блик по карточке термина */
 .card::after {
   content: "";
   position: absolute;
@@ -471,8 +699,7 @@ main { padding: 20px 32px; }
 }
 .card:hover::after { left: 120%; }
 
-/* ---------- взлетающий эмодзи при клике на стикер ---------- */
-
+/* взлетающий эмодзи */
 .fly-emoji {
   position: fixed;
   font-size: 22px;
@@ -482,24 +709,48 @@ main { padding: 20px 32px; }
   animation: fly-up 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
-/* ---------- уважение «меньше движения» ---------- */
-
+/* уважение «меньше движения» */
 @media (prefers-reduced-motion: reduce) {
   .card-icon,
   .card,
-  .cat-chip.active {
+  .cat-chip.active,
+  .cat-card,
+  .category-card,
+  .section-card {
     animation: none !important;
   }
   .card::after { transition: none; }
 }
 
-/* ---------------- адаптив ---------------- */
+/* =========================================================
+   АДАПТИВ
+   ========================================================= */
 
 @media (max-width: 640px) {
   .topbar { padding: 16px; }
   #search { width: 100%; }
   .controls { width: 100%; }
   main,
-  .categories { padding-left: 16px; padding-right: 16px; }
+  .categories,
+  .cat-list,
+  .category-list,
+  .categories-list,
+  .sections-list,
+  .categories-view,
+  .sections-view,
+  .sections-title,
+  .categories-title,
+  .page-title,
+  .sections-subtitle,
+  .categories-subtitle,
+  .page-subtitle,
+  .back-btn,
+  .back-link,
+  .back-to-categories {
+    padding-left: 16px;
+    padding-right: 16px;
+    margin-left: 0;
+    margin-right: 0;
+  }
   .card-icon { width: 34px; height: 34px; font-size: 18px; }
 }
