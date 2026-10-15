@@ -29,9 +29,7 @@ body {
   padding-bottom: 60px;
 }
 
-/* =========================================================
-   ШАПКА
-   ========================================================= */
+/* ---------------- шапка ---------------- */
 
 .topbar {
   display: flex;
@@ -79,9 +77,7 @@ body {
 }
 #search:focus { border-color: var(--accent); }
 
-/* =========================================================
-   КНОПКИ
-   ========================================================= */
+/* ---------------- кнопки ---------------- */
 
 .btn {
   border: 1px solid var(--border);
@@ -105,9 +101,7 @@ body {
 .btn.danger { color: var(--danger); border-color: rgba(239, 68, 68, 0.4); }
 .btn.danger:hover { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); }
 
-/* =========================================================
-   ЧИПЫ КАТЕГОРИЙ
-   ========================================================= */
+/* ---------------- чипы категорий ---------------- */
 
 .categories {
   display: flex;
@@ -151,25 +145,7 @@ body {
 }
 .chip-label { line-height: 1; }
 
-/* =========================================================
-   СТРАНИЦА «РАЗДЕЛЫ СЛОВАРЯ»
-   ========================================================= */
-
-.sections-title,
-.categories-title,
-.page-title {
-  font-size: 26px;
-  font-weight: 700;
-  margin: 24px 32px 6px;
-}
-
-.sections-subtitle,
-.categories-subtitle,
-.page-subtitle {
-  font-size: 14px;
-  color: var(--muted);
-  margin: 0 32px 20px;
-}
+/* ---------------- страница «Разделы словаря» ---------------- */
 
 .cat-list,
 .category-list,
@@ -201,10 +177,7 @@ body {
 
 .cat-card:hover,
 .category-card:hover,
-.section-card:hover,
-.cat-item:hover,
-.category-item:hover,
-.section-item:hover {
+.section-card:hover {
   border-color: var(--accent);
   transform: translateX(4px);
 }
@@ -212,21 +185,12 @@ body {
 .cat-card .cat-icon,
 .category-card .cat-icon,
 .section-card .cat-icon,
-.cat-item .cat-icon,
-.category-item .cat-icon,
-.section-item .cat-icon,
 .cat-card .category-icon,
 .category-card .category-icon,
 .section-card .category-icon,
-.cat-item .category-icon,
-.category-item .category-icon,
-.section-item .category-icon,
 .cat-card .section-icon,
 .category-card .section-icon,
-.section-card .section-icon,
-.cat-item .section-icon,
-.category-item .section-icon,
-.section-item .section-icon {
+.section-card .section-icon {
   font-size: 22px;
   line-height: 1;
   flex-shrink: 0;
@@ -243,21 +207,9 @@ body {
 .cat-card .cat-name,
 .category-card .cat-name,
 .section-card .cat-name,
-.cat-item .cat-name,
-.category-item .cat-name,
-.section-item .cat-name,
 .cat-card .cat-title,
 .category-card .cat-title,
-.section-card .cat-title,
-.cat-item .cat-title,
-.category-item .cat-title,
-.section-item .cat-title,
-.cat-card .section-name,
-.category-card .section-name,
-.section-card .section-name,
-.cat-item .section-name,
-.category-item .section-name,
-.section-item .section-name {
+.section-card .cat-title {
   flex: 1;
   font-size: 15px;
   font-weight: 600;
@@ -267,15 +219,9 @@ body {
 .cat-card .cat-count,
 .category-card .cat-count,
 .section-card .cat-count,
-.cat-item .cat-count,
-.category-item .cat-count,
-.section-item .cat-count,
 .cat-card .section-count,
 .category-card .section-count,
-.section-card .section-count,
-.cat-item .section-count,
-.category-item .section-count,
-.section-item .section-count {
+.section-card .section-count {
   font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
@@ -285,35 +231,13 @@ body {
 .cat-card .cat-arrow,
 .category-card .cat-arrow,
 .section-card .cat-arrow,
-.cat-item .cat-arrow,
-.category-item .cat-arrow,
-.section-item .cat-arrow,
 .cat-card .section-arrow,
 .category-card .section-arrow,
-.section-card .section-arrow,
-.cat-item .section-arrow,
-.category-item .section-arrow,
-.section-item .section-arrow {
+.section-card .section-arrow {
   color: var(--accent-2);
   font-size: 18px;
   line-height: 1;
   flex-shrink: 0;
-  transition: transform 0.18s;
-}
-
-.cat-card:hover .cat-arrow,
-.category-card:hover .cat-arrow,
-.section-card:hover .cat-arrow,
-.cat-item:hover .cat-arrow,
-.category-item:hover .cat-arrow,
-.section-item:hover .cat-arrow,
-.cat-card:hover .section-arrow,
-.category-card:hover .section-arrow,
-.section-card:hover .section-arrow,
-.cat-item:hover .section-arrow,
-.category-item:hover .section-arrow,
-.section-item:hover .section-arrow {
-  transform: translateX(4px);
 }
 
 .back-btn,
@@ -340,9 +264,7 @@ body {
   color: var(--accent-2);
 }
 
-/* =========================================================
-   СЕТКА ТЕРМИНОВ
-   ========================================================= */
+/* ---------------- сетка терминов ---------------- */
 
 main { padding: 20px 32px; }
 
@@ -385,7 +307,6 @@ main { padding: 20px 32px; }
   overflow: hidden;
 }
 
-/* шапка карточки термина: иконка + бейдж */
 .card-head {
   display: flex;
   align-items: center;
@@ -429,9 +350,7 @@ main { padding: 20px 32px; }
   white-space: nowrap;
 }
 
-/* =========================================================
-   МОДАЛКИ
-   ========================================================= */
+/* ---------------- модалки ---------------- */
 
 .modal {
   position: fixed;
@@ -496,9 +415,7 @@ main { padding: 20px 32px; }
 }
 .close:hover { color: var(--text); background: var(--panel-2); }
 
-/* =========================================================
-   ФОРМА
-   ========================================================= */
+/* ---------------- форма ---------------- */
 
 #termForm { display: flex; flex-direction: column; gap: 14px; }
 
@@ -532,9 +449,7 @@ main { padding: 20px 32px; }
   margin-top: 20px;
 }
 
-/* =========================================================
-   АДАПТИВ
-   ========================================================= */
+/* ---------------- адаптив ---------------- */
 
 @media (max-width: 640px) {
   .topbar { padding: 16px; }
@@ -546,12 +461,6 @@ main { padding: 20px 32px; }
   .category-list,
   .categories-list,
   .sections-list,
-  .sections-title,
-  .categories-title,
-  .page-title,
-  .sections-subtitle,
-  .categories-subtitle,
-  .page-subtitle,
   .back-btn,
   .back-link,
   .back-to-categories {

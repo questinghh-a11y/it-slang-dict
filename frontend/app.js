@@ -256,10 +256,9 @@ function pluralTerms(n) {
 // ---------- отрисовка: термины ----------
 function renderGrid() {
   grid.innerHTML = "";
-  state.terms.forEach((t, i) => {
+  state.terms.forEach((t) => {
     const card = document.createElement("article");
     card.className = "card";
-    card.style.animationDelay = (i * 25) + "ms";
     card.onclick = () => openView(t);
 
     const head = document.createElement("div");
@@ -267,8 +266,7 @@ function renderGrid() {
 
     const icon = document.createElement("span");
     icon.className = "card-icon";
-    icon.dataset.cat = t.category;
-    icon.innerHTML = iconFor(t.category);
+    icon.textContent = iconFor(t.category);
 
     const badge = document.createElement("span");
     badge.className = "badge";
@@ -283,32 +281,9 @@ function renderGrid() {
     p.className = "short";
     p.textContent = t.definition;
 
-
-      const s = document.createElement("span");
-      s.className = "sticker";
-      s.textContent = emoji;
-      s.title = "Реакция";
-      s.onclick = (e) => {
-        e.stopPropagation();
-        popSticker(s, emoji);
-      };
-      stickers.appendChild(s);
-    }
-
-    card.append(head, h3, p, stickers);
+    card.append(head, h3, p);
     grid.appendChild(card);
-  });      // ← закрывает forEach
-}          // ← закрывает renderGrid
-
-function popSticker(el, emoji) {
-  const rect = el.getBoundingClientRect();
-  const fly = document.createElement("div");
-  fly.className = "fly-emoji";
-  fly.textContent = emoji;
-  fly.style.left = (rect.left + rect.width / 2) + "px";
-  fly.style.top  = rect.top + "px";
-  document.body.appendChild(fly);
-  setTimeout(() => fly.remove(), 900);
+  });
 }
 
 function fillCategoryDatalist() {
