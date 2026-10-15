@@ -283,9 +283,7 @@ function renderGrid() {
     p.className = "short";
     p.textContent = t.definition;
 
-    const stickers = document.createElement("div");
-    stickers.className = "sticker-row";
-    for (const emoji of ["🔥", "😂", "🤯", "💡"]) {
+
       const s = document.createElement("span");
       s.className = "sticker";
       s.textContent = emoji;

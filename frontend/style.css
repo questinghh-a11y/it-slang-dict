@@ -106,7 +106,7 @@ body {
 .btn.danger:hover { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); }
 
 /* =========================================================
-   ЧИПЫ КАТЕГОРИЙ (горизонтальная полоса фильтров под шапкой)
+   ЧИПЫ КАТЕГОРИЙ
    ========================================================= */
 
 .categories {
@@ -155,7 +155,6 @@ body {
    СТРАНИЦА «РАЗДЕЛЫ СЛОВАРЯ»
    ========================================================= */
 
-/* заголовок и подзаголовок страницы */
 .sections-title,
 .categories-title,
 .page-title {
@@ -172,7 +171,6 @@ body {
   margin: 0 32px 20px;
 }
 
-/* список разделов — просто вертикальный стек */
 .cat-list,
 .category-list,
 .categories-list,
@@ -183,7 +181,6 @@ body {
   padding: 0 32px 24px;
 }
 
-/* одна карточка раздела — строка: иконка — название — счётчик — стрелка */
 .cat-card,
 .category-card,
 .section-card,
@@ -200,7 +197,6 @@ body {
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.18s;
-  animation: card-in 0.3s ease-out both;
 }
 
 .cat-card:hover,
@@ -213,7 +209,6 @@ body {
   transform: translateX(4px);
 }
 
-/* иконка раздела */
 .cat-card .cat-icon,
 .category-card .cat-icon,
 .section-card .cat-icon,
@@ -245,7 +240,6 @@ body {
   border-radius: 9px;
 }
 
-/* название раздела — растягивается, забирает свободное место */
 .cat-card .cat-name,
 .category-card .cat-name,
 .section-card .cat-name,
@@ -270,7 +264,6 @@ body {
   color: var(--text);
 }
 
-/* счётчик терминов */
 .cat-card .cat-count,
 .category-card .cat-count,
 .section-card .cat-count,
@@ -289,7 +282,6 @@ body {
   flex-shrink: 0;
 }
 
-/* стрелка справа */
 .cat-card .cat-arrow,
 .category-card .cat-arrow,
 .section-card .cat-arrow,
@@ -324,104 +316,6 @@ body {
   transform: translateX(4px);
 }
 
-/* кнопка «← Все разделы» */
-.back-btn,
-.back-link,
-.back-to-categories {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  cursor: pointer;
-  margin: 20px 32px 4px;
-  transition: all 0.15s;
-  font-family: inherit;
-}
-.back-btn:hover,
-.back-link:hover,
-.back-to-categories:hover {
-  border-color: var(--accent);
-  color: var(--accent-2);
-}
-
-/* счётчик терминов */
-.cat-card .cat-count,
-.category-card .cat-count,
-.section-card .cat-count,
-.cat-item .cat-count,
-.category-item .cat-count,
-.section-item .cat-count,
-.cat-card .count,
-.category-card .count,
-.section-card .count,
-.cat-item .count,
-.category-item .count,
-.section-item .count,
-.cat-card .section-count,
-.category-card .section-count,
-.section-card .section-count,
-.cat-item .section-count,
-.category-item .section-count,
-.section-item .section-count {
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* стрелка справа */
-.cat-card .cat-arrow,
-.category-card .cat-arrow,
-.section-card .cat-arrow,
-.cat-item .cat-arrow,
-.category-item .cat-arrow,
-.section-item .cat-arrow,
-.cat-card .arrow,
-.category-card .arrow,
-.section-card .arrow,
-.cat-item .arrow,
-.category-item .arrow,
-.section-item .arrow,
-.cat-card .section-arrow,
-.category-card .section-arrow,
-.section-card .section-arrow,
-.cat-item .section-arrow,
-.category-item .section-arrow,
-.section-item .section-arrow {
-  color: var(--accent-2);
-  font-size: 18px;
-  line-height: 1;
-  flex-shrink: 0;
-  transition: transform 0.18s;
-}
-
-.cat-card:hover .cat-arrow,
-.category-card:hover .cat-arrow,
-.section-card:hover .cat-arrow,
-.cat-item:hover .cat-arrow,
-.category-item:hover .cat-arrow,
-.section-item:hover .cat-arrow,
-.cat-card:hover .arrow,
-.category-card:hover .arrow,
-.section-card:hover .arrow,
-.cat-item:hover .arrow,
-.category-item:hover .arrow,
-.section-item:hover .arrow,
-.cat-card:hover .section-arrow,
-.category-card:hover .section-arrow,
-.section-card:hover .section-arrow,
-.cat-item:hover .section-arrow,
-.category-item:hover .section-arrow,
-.section-item:hover .section-arrow {
-  transform: translateX(4px);
-}
-
-/* кнопка «← Все разделы» */
 .back-btn,
 .back-link,
 .back-to-categories {
@@ -462,7 +356,6 @@ main { padding: 20px 32px; }
 
 .card {
   position: relative;
-  overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -472,7 +365,6 @@ main { padding: 20px 32px; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  animation: card-in 0.35s ease-out both;
 }
 
 .card:hover {
@@ -538,48 +430,6 @@ main { padding: 20px 32px; }
 }
 
 /* =========================================================
-   СТИКЕР-РЯД РЕАКЦИЙ
-   ========================================================= */
-
-.sticker-row {
-  display: flex;
-  gap: 6px;
-  margin-top: 0;
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
-}
-
-.card:hover .sticker-row {
-  max-height: 44px;
-  opacity: 1;
-  margin-top: 10px;
-}
-
-.sticker {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
-  user-select: none;
-}
-.sticker:hover {
-  transform: translateY(-3px) scale(1.2) rotate(-8deg);
-  background: rgba(124, 92, 255, 0.18);
-  border-color: var(--accent);
-}
-.sticker:active { transform: scale(0.9); }
-
-/* =========================================================
    МОДАЛКИ
    ========================================================= */
 
@@ -606,12 +456,6 @@ main { padding: 20px 32px; }
   max-height: 90vh;
   overflow-y: auto;
   position: relative;
-  animation: pop 0.18s ease-out;
-}
-
-@keyframes pop {
-  from { transform: scale(0.96); opacity: 0; }
-  to   { transform: scale(1);    opacity: 1; }
 }
 
 .modal-card h2 { font-size: 22px; margin: 12px 0 14px; }
@@ -689,110 +533,6 @@ main { padding: 20px 32px; }
 }
 
 /* =========================================================
-   АНИМАЦИИ
-   ========================================================= */
-
-@keyframes icon-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-@keyframes icon-wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25%      { transform: rotate(-14deg); }
-  75%      { transform: rotate(14deg); }
-}
-
-@keyframes icon-pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.12); }
-}
-
-@keyframes icon-bob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-4px); }
-}
-
-@keyframes card-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.96); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
-
-@keyframes fly-up {
-  0%   { transform: translate(-50%, 0)     scale(1)   rotate(0deg);   opacity: 1; }
-  40%  { transform: translate(-50%, -30px) scale(1.3) rotate(-10deg); opacity: 1; }
-  100% { transform: translate(-50%, -90px) scale(1.6) rotate(15deg);  opacity: 0; }
-}
-
-@keyframes chip-glow {
-  0%, 100% { box-shadow: 0 0 0 0   rgba(124, 92, 255, 0.5); }
-  50%      { box-shadow: 0 0 0 6px rgba(124, 92, 255, 0); }
-}
-
-/* анимации иконок в карточках терминов по категориям */
-.card-icon[data-cat="Процесс разработки"] { animation: icon-spin   9s  linear infinite; }
-.card-icon[data-cat="Код и качество"]     { animation: icon-wiggle 2.4s ease-in-out infinite; }
-.card-icon[data-cat="Инфраструктура"]     { animation: icon-pulse  2.2s ease-in-out infinite; }
-.card-icon[data-cat="Команда и роли"]     { animation: icon-bob    2s   ease-in-out infinite; }
-.card-icon[data-cat="Веб и API"]          { animation: icon-spin   12s  linear infinite; }
-
-.card-icon[data-cat="Базы данных"]          { animation: icon-pulse  2.6s ease-in-out infinite; }
-.card-icon[data-cat="Безопасность"]         { animation: icon-wiggle 3s   ease-in-out infinite; }
-.card-icon[data-cat="Тестирование"]         { animation: icon-bob    2.2s ease-in-out infinite; }
-.card-icon[data-cat="Git"]                  { animation: icon-spin   7s   linear infinite; }
-.card-icon[data-cat="Data Science / ML"]    { animation: icon-pulse  2.4s ease-in-out infinite; }
-.card-icon[data-cat="Мобильная разработка"] { animation: icon-bob    2.8s ease-in-out infinite; }
-.card-icon[data-cat="Сети"]                 { animation: icon-spin   14s  linear infinite; }
-
-.card:hover .card-icon { animation-duration: 1s !important; }
-
-/* пульсация активного чипа */
-.cat-chip.active { animation: chip-glow 2.4s ease-in-out infinite; }
-
-/* блик по карточке термина */
-.card::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -120%;
-  width: 120%;
-  height: 100%;
-  background: linear-gradient(
-    100deg,
-    transparent 0%,
-    rgba(124, 92, 255, 0.10) 40%,
-    rgba(34, 211, 238, 0.12) 55%,
-    transparent 100%
-  );
-  transition: left 0.7s ease;
-  pointer-events: none;
-}
-.card:hover::after { left: 120%; }
-
-/* взлетающий эмодзи */
-.fly-emoji {
-  position: fixed;
-  font-size: 22px;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 500;
-  animation: fly-up 0.9s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-}
-
-/* уважение «меньше движения» */
-@media (prefers-reduced-motion: reduce) {
-  .card-icon,
-  .card,
-  .cat-chip.active,
-  .cat-card,
-  .category-card,
-  .section-card {
-    animation: none !important;
-  }
-  .card::after { transition: none; }
-}
-
-/* =========================================================
    АДАПТИВ
    ========================================================= */
 
@@ -806,8 +546,6 @@ main { padding: 20px 32px; }
   .category-list,
   .categories-list,
   .sections-list,
-  .categories-view,
-  .sections-view,
   .sections-title,
   .categories-title,
   .page-title,
