@@ -16,6 +16,10 @@ const CATEGORY_ICONS = {
   "Сети": "📡",
 };
 
+function iconFor(category) {
+  return CATEGORY_ICONS[category] || "📖";
+}
+
 const state = {
   terms: [],
   categories: [],
