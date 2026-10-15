@@ -152,15 +152,10 @@ body {
 .chip-label { line-height: 1; }
 
 /* =========================================================
-   СТРАНИЦА «РАЗДЕЛЫ СЛОВАРЯ» — карточки категорий
-   =========================================================
-   Внимание: ниже селекторы перечислены через запятую,
-   чтобы поймать любой из возможных вариантов классов.
-   Когда узнаешь, какие классы у тебя реально используются —
-   оставь только их, остальные удали.
+   СТРАНИЦА «РАЗДЕЛЫ СЛОВАРЯ»
    ========================================================= */
 
-/* заголовок страницы */
+/* заголовок и подзаголовок страницы */
 .sections-title,
 .categories-title,
 .page-title {
@@ -177,21 +172,18 @@ body {
   margin: 0 32px 20px;
 }
 
-/* контейнер списка разделов */
+/* список разделов — просто вертикальный стек */
 .cat-list,
 .category-list,
 .categories-list,
-.sections-list,
-.categories-view,
-.sections-view {
+.sections-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 0 32px 24px;
-  max-width: 900px;
 }
 
-/* одна карточка раздела */
+/* одна карточка раздела — строка: иконка — название — счётчик — стрелка */
 .cat-card,
 .category-card,
 .section-card,
@@ -202,7 +194,7 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 14px;
-  padding: 14px 18px;
+  padding: 12px 18px;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -219,7 +211,6 @@ body {
 .section-item:hover {
   border-color: var(--accent);
   transform: translateX(4px);
-  box-shadow: 0 6px 24px rgba(124, 92, 255, 0.12);
 }
 
 /* иконка раздела */
@@ -241,20 +232,20 @@ body {
 .cat-item .section-icon,
 .category-item .section-icon,
 .section-item .section-icon {
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: rgba(124, 92, 255, 0.12);
   border: 1px solid rgba(124, 92, 255, 0.25);
-  border-radius: 10px;
+  border-radius: 9px;
 }
 
-/* название раздела */
+/* название раздела — растягивается, забирает свободное место */
 .cat-card .cat-name,
 .category-card .cat-name,
 .section-card .cat-name,
@@ -277,6 +268,85 @@ body {
   font-size: 15px;
   font-weight: 600;
   color: var(--text);
+}
+
+/* счётчик терминов */
+.cat-card .cat-count,
+.category-card .cat-count,
+.section-card .cat-count,
+.cat-item .cat-count,
+.category-item .cat-count,
+.section-item .cat-count,
+.cat-card .section-count,
+.category-card .section-count,
+.section-card .section-count,
+.cat-item .section-count,
+.category-item .section-count,
+.section-item .section-count {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* стрелка справа */
+.cat-card .cat-arrow,
+.category-card .cat-arrow,
+.section-card .cat-arrow,
+.cat-item .cat-arrow,
+.category-item .cat-arrow,
+.section-item .cat-arrow,
+.cat-card .section-arrow,
+.category-card .section-arrow,
+.section-card .section-arrow,
+.cat-item .section-arrow,
+.category-item .section-arrow,
+.section-item .section-arrow {
+  color: var(--accent-2);
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform 0.18s;
+}
+
+.cat-card:hover .cat-arrow,
+.category-card:hover .cat-arrow,
+.section-card:hover .cat-arrow,
+.cat-item:hover .cat-arrow,
+.category-item:hover .cat-arrow,
+.section-item:hover .cat-arrow,
+.cat-card:hover .section-arrow,
+.category-card:hover .section-arrow,
+.section-card:hover .section-arrow,
+.cat-item:hover .section-arrow,
+.category-item:hover .section-arrow,
+.section-item:hover .section-arrow {
+  transform: translateX(4px);
+}
+
+/* кнопка «← Все разделы» */
+.back-btn,
+.back-link,
+.back-to-categories {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+  margin: 20px 32px 4px;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.back-btn:hover,
+.back-link:hover,
+.back-to-categories:hover {
+  border-color: var(--accent);
+  color: var(--accent-2);
 }
 
 /* счётчик терминов */
