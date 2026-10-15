@@ -250,16 +250,28 @@ function pluralTerms(n) {
 }
 
 // ---------- отрисовка: термины ----------
-function renderGrid() {
+function function renderGrid() {
   grid.innerHTML = "";
   state.terms.forEach((t, i) => {
     const card = document.createElement("article");
     card.className = "card";
-    card.style.setProperty("--i", Math.min(i, 30));
+    card.style.animationDelay = (i * 25) + "ms";   // каскадное появление
+    card.onclick = () => openView(t);
+
+    // шапка карточки: иконка + бейдж
+    const head = document.createElement("div");
+    head.className = "card-head";
+
+    const icon = document.createElement("span");
+    icon.className = "card-icon";
+    icon.dataset.cat = t.category;          // ← ключ для CSS-анимации
+    icon.innerHTML = iconFor(t.category);
 
     const badge = document.createElement("span");
     badge.className = "badge";
     badge.textContent = t.category;
+
+    head.append(icon, badge);
 
     const h3 = document.createElement("h3");
     h3.textContent = t.term;
@@ -268,32 +280,34 @@ function renderGrid() {
     p.className = "short";
     p.textContent = t.definition;
 
-    card.append(badge, h3, p);
-    card.onclick = (e) => {
-      if (e.target.closest(".btn")) return;
-      openView(t);
-    };
-
-    if (isAdmin()) {
-      const actions = document.createElement("div");
-      actions.className = "card-actions";
-
-      const editBtn = document.createElement("button");
-      editBtn.className = "btn ghost";
-      editBtn.textContent = "✏ Изменить";
-      editBtn.onclick = (e) => { e.stopPropagation(); openForm(t); };
-
-      const delBtn = document.createElement("button");
-      delBtn.className = "btn danger";
-      delBtn.textContent = "🗑 Удалить";
-      delBtn.onclick = (e) => { e.stopPropagation(); deleteTerm(t); };
-
-      actions.append(editBtn, delBtn);
-      card.appendChild(actions);
+    // стикер-ряд: выезжает при наведении, эмодзи взлетают при клике
+    const stickers = document.createElement("div");
+    stickers.className = "sticker-row";
+    for (const emoji of ["🔥", "😂", "🤯", "💡"]) {
+      const s = document.createElement("span");
+      s.className = "sticker";
+      s.textContent = emoji;
+      s.title = "Реакция";
+      s.onclick = (e) => {
+        e.stopPropagation();      // не открывать модалку термина
+        popSticker(s, emoji);
+      };
+      stickers.appendChild(s);
     }
 
+    card.append(head, h3, p, stickers);
     grid.appendChild(card);
   });
+}
+function popSticker(el, emoji) {
+  const rect = el.getBoundingClientRect();
+  const fly = document.createElement("div");
+  fly.className = "fly-emoji";
+  fly.textContent = emoji;
+  fly.style.left = (rect.left + rect.width / 2) + "px";
+  fly.style.top  = rect.top + "px";
+  document.body.appendChild(fly);
+  setTimeout(() => fly.remove(), 900);
 }
 
 function fillCategoryDatalist() {
