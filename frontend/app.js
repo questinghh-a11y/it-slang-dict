@@ -16,10 +16,6 @@ const CATEGORY_ICONS = {
   "Сети": "📡",
 };
 
-function iconFor(category) {
-  return CATEGORY_ICONS[category] || "📖";
-}
-
 const state = {
   terms: [],
   categories: [],
@@ -256,23 +252,14 @@ function pluralTerms(n) {
 // ---------- отрисовка: термины ----------
 function renderGrid() {
   grid.innerHTML = "";
-  state.terms.forEach((t) => {
+  state.terms.forEach((t, i) => {
     const card = document.createElement("article");
     card.className = "card";
-    card.onclick = () => openView(t);
-
-    const head = document.createElement("div");
-    head.className = "card-head";
-
-    const icon = document.createElement("span");
-    icon.className = "card-icon";
-    icon.textContent = iconFor(t.category);
+    card.style.setProperty("--i", Math.min(i, 30));
 
     const badge = document.createElement("span");
     badge.className = "badge";
     badge.textContent = t.category;
-
-    head.append(icon, badge);
 
     const h3 = document.createElement("h3");
     h3.textContent = t.term;
@@ -281,7 +268,30 @@ function renderGrid() {
     p.className = "short";
     p.textContent = t.definition;
 
-    card.append(head, h3, p);
+    card.append(badge, h3, p);
+    card.onclick = (e) => {
+      if (e.target.closest(".btn")) return;
+      openView(t);
+    };
+
+    if (isAdmin()) {
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "btn ghost";
+      editBtn.textContent = "✏ Изменить";
+      editBtn.onclick = (e) => { e.stopPropagation(); openForm(t); };
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "btn danger";
+      delBtn.textContent = "🗑 Удалить";
+      delBtn.onclick = (e) => { e.stopPropagation(); deleteTerm(t); };
+
+      actions.append(editBtn, delBtn);
+      card.appendChild(actions);
+    }
+
     grid.appendChild(card);
   });
 }
