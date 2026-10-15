@@ -250,21 +250,20 @@ function pluralTerms(n) {
 }
 
 // ---------- отрисовка: термины ----------
-function function renderGrid() {
+function renderGrid() {
   grid.innerHTML = "";
   state.terms.forEach((t, i) => {
     const card = document.createElement("article");
     card.className = "card";
-    card.style.animationDelay = (i * 25) + "ms";   // каскадное появление
+    card.style.animationDelay = (i * 25) + "ms";
     card.onclick = () => openView(t);
 
-    // шапка карточки: иконка + бейдж
     const head = document.createElement("div");
     head.className = "card-head";
 
     const icon = document.createElement("span");
     icon.className = "card-icon";
-    icon.dataset.cat = t.category;          // ← ключ для CSS-анимации
+    icon.dataset.cat = t.category;
     icon.innerHTML = iconFor(t.category);
 
     const badge = document.createElement("span");
@@ -280,7 +279,6 @@ function function renderGrid() {
     p.className = "short";
     p.textContent = t.definition;
 
-    // стикер-ряд: выезжает при наведении, эмодзи взлетают при клике
     const stickers = document.createElement("div");
     stickers.className = "sticker-row";
     for (const emoji of ["🔥", "😂", "🤯", "💡"]) {
@@ -289,7 +287,7 @@ function function renderGrid() {
       s.textContent = emoji;
       s.title = "Реакция";
       s.onclick = (e) => {
-        e.stopPropagation();      // не открывать модалку термина
+        e.stopPropagation();
         popSticker(s, emoji);
       };
       stickers.appendChild(s);
@@ -297,8 +295,8 @@ function function renderGrid() {
 
     card.append(head, h3, p, stickers);
     grid.appendChild(card);
-  });
-}
+  });      // ← закрывает forEach
+}          // ← закрывает renderGrid
 
 function popSticker(el, emoji) {
   const rect = el.getBoundingClientRect();
