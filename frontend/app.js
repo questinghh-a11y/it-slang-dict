@@ -295,7 +295,7 @@ async function submitLogin(e) {
 async function submitRegister(e) {
   e.preventDefault(); const f = e.target;
 
-  // Проверка 152-ФЗ (на всякий случай, если HTML required обойдут)
+  // Проверка 152-ФЗ
   if (!f.privacyConsent.checked) { toast("ТРЕБУЕТСЯ СОГЛАСИЕ (152-ФЗ)", "error"); return; }
 
   try {
@@ -449,6 +449,50 @@ $("#randomBtn").addEventListener("click", async () => { try { openView(await api
 document.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", closeAll));
 document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", (e) => { if (e.target === m) closeAll(); }));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
+
+// ==========================================
+// ПАСХАЛКА METRO 2033
+// ==========================================
+let dotClicks = 0;
+let dotTimer;
+const statusDot = document.getElementById("statusDot");
+
+if (statusDot) {
+    statusDot.style.cursor = "pointer";
+    statusDot.addEventListener("click", () => {
+        dotClicks++;
+        clearTimeout(dotTimer);
+
+        // Сброс, если не кликать 1.5 секунды
+        dotTimer = setTimeout(() => { dotClicks = 0; }, 1500);
+
+        if (dotClicks === 5) {
+            dotClicks = 0;
+
+            // 1. Тревожный красный
+            statusDot.style.background = "#a83232";
+            statusDot.style.boxShadow = "0 0 20px #a83232";
+
+            // 2. Сообщение
+            toast("ВНИМАНИЕ: ОБНАРУЖЕНА АНОМАЛИЯ. НАДЕНЬТЕ ПРОТИВОГАЗ.", "error", 4000);
+
+            // 3. Включаем светлую тему
+            document.documentElement.setAttribute("data-theme", "light");
+
+            // 4. Через 3 секунды выключаем
+            setTimeout(() => {
+                document.documentElement.removeAttribute("data-theme");
+                statusDot.style.background = "#4af626";
+                statusDot.style.boxShadow = "0 0 8px #4af626";
+                toast("ФОНАРИК СЕЛ. ПЕРЕХОД НА РЕЗЕРВНОЕ ПИТАНИЕ.", "info", 4000);
+            }, 3000);
+        }
+    });
+}
+
+// Секретное сообщение в консоль
+console.log("%c[METRO_DICT_SYS v2.0 // SECURE TERMINAL]", "color: #d17a22; font-size: 20px; font-weight: bold; background: #000; padding: 10px; border: 2px solid #d17a22;");
+console.log("%cЕсли ты открыл консоль, значит, ты знаешь, что делаешь. Добро пожаловать в Спарту, сталкер. Жди сигнала. 2033 год.", "color: #4af626; font-size: 14px; font-family: monospace;");
 
 // --- СТАРТ ---
 (async function init() {

@@ -1,12 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
 :root {
-    /* Цвета стали мягче, чтобы глаза не уставали */
-    --bg: #1a1a1a;           /* Темно-серый, а не черный */
-    --panel: #262421;        /* Цвет ржавого металла */
-    --text: #b8b0a1;         /* Теплый серо-бежевый */
-    --text-bright: #f0f0f0;  /* Для заголовков */
-    --accent: #c87a36;       /* Оранжевый стал чуть тусклее */
+    --bg: #1a1a1a;
+    --panel: #262421;
+    --text: #b8b0a1;
+    --text-bright: #f0f0f0;
+    --accent: #c87a36;
     --danger: #a83232;
     --border: #44403a;
     --font: 'Share Tech Mono', monospace;
@@ -27,15 +26,14 @@
     padding: 0;
     border-radius: 0 !important;
     font-family: var(--font);
-    /* Убрали text-shadow, так как он делает текст "грязным" и утомляет глаза */
 }
 
-/* Эффект ЭЛТ-монитора сильно приглушен */
+/* Приглушенный эффект ЭЛТ-монитора */
 .crt-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
     background-size: 100% 4px;
-    z-index: 9999; pointer-events: none; opacity: 0.3; /* Было 0.7 */
+    z-index: 9999; pointer-events: none; opacity: 0.3;
 }
 
 body {
@@ -79,17 +77,10 @@ button:hover, .btn:hover { background: var(--border); color: var(--text-bright);
 .btn.danger:hover { background: var(--danger); color: #fff; }
 
 /* Контейнеры контента */
-#categoriesView, #termsView {
-    width: 100%; max-width: 1400px; margin: 0 auto; padding: 30px; flex: 1;
-}
+#categoriesView, #termsView { width: 100%; max-width: 1400px; margin: 0 auto; padding: 30px; flex: 1; }
 
 /* Сетки (Grid) */
-.dictionary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
-    width: 100%;
-}
+.dictionary-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; width: 100%; }
 
 /* Карточки терминов */
 .card {
@@ -152,6 +143,7 @@ form textarea { resize: vertical; min-height: 100px; }
 .user-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border); }
 .user-name { color: var(--text-bright); font-weight: bold; font-size: 1.1rem; }
 
+/* ИСПРАВЛЕННЫЙ ПОДВАЛ */
 footer {
     display: flex;
     justify-content: space-between;
@@ -162,18 +154,11 @@ footer {
     font-size: 0.85rem;
     margin-top: auto;
     color: #777;
-    /* ДОБАВЛЕНО: отступ справа, чтобы плавающие кнопки не перекрывали ссылку на ПК */
-    padding-right: 320px;
+    padding-right: 350px; /* Отступ, чтобы кнопки не перекрывали текст */
 }
 
-/* На мобильных устройствах убираем отступ, так как кнопки будут сверху */
 @media (max-width: 768px) {
-    footer {
-        padding-right: 30px;
-        padding-bottom: 120px; /* Место под кнопки на телефонах */
-        flex-direction: column;
-        gap: 10px;
-    }
+    footer { padding-right: 30px; padding-bottom: 140px; flex-direction: column; gap: 10px; text-align: center; }
 }
 
 footer a {
@@ -182,6 +167,5 @@ footer a {
     border-bottom: 1px dashed var(--accent);
     font-weight: bold;
     font-size: 0.9rem;
-    text-transform: uppercase;
 }
 footer a:hover { color: var(--text-bright); border-color: var(--text-bright); }

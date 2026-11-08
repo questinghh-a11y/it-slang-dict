@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Безопасность и 152-ФЗ (CSP) -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+
     <title>Терминал: Словарь IT-сленга</title>
+    <meta name="description" content="Терминал доступа к базе данных ИТ-сленга.">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <div class="crt-overlay"></div>
     <div id="toasts" class="toasts-container"></div>
 
     <header>
         <div class="logo">
-            <span class="status-dot"></span> METRO_DICT_SYS // T_DB
+            <!-- Сюда добавлен ID для пасхалки -->
+            <span class="status-dot" id="statusDot" title="Не нажимай..."></span> METRO_DICT_SYS // T_DB
         </div>
 
         <div class="controls">
@@ -49,7 +55,7 @@
         <button id="addBtn" class="add-btn hidden">+ ВНЕСТИ ЗАПИСЬ</button>
     </div>
 
-    <!-- Модалки (сокращены для читаемости, они такие же как в прошлом коде) -->
+    <!-- МОДАЛЬНОЕ ОКНО: Просмотр термина -->
     <div id="viewModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -57,7 +63,7 @@
                 <button class="close-btn" data-close>[ X ]</button>
             </div>
             <div style="padding: 20px;">
-                <h2 id="viewTerm" style="color: var(--text-bright); margin-bottom: 10px;">ТЕРМИН</h2>
+                <h2 id="viewTerm" style="color: var(--text-bright); margin-bottom: 10px; text-transform: uppercase;">ТЕРМИН</h2>
                 <p id="viewDefinition" style="line-height: 1.6;"></p>
                 <div id="viewExampleWrap" style="margin-top: 15px;">
                     <p id="viewExample" style="border-left: 2px solid var(--accent); padding-left: 10px; font-style: italic; color: #888;"></p>
@@ -67,6 +73,7 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО: Добавление/Редактирование -->
     <div id="formModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -75,63 +82,71 @@
             </div>
             <form id="termForm">
                 <label>ТЕРМИН *</label>
-                <input type="text" name="term" required>
+                <input type="text" name="term" required placeholder="Например: Хардкод">
                 <label>СЕКТОР *</label>
-                <input type="text" name="category" list="catList" required>
+                <input type="text" name="category" list="catList" required placeholder="Выберите или введите...">
                 <datalist id="catList"></datalist>
                 <label>ОПИСАНИЕ *</label>
-                <textarea name="definition" required></textarea>
+                <textarea name="definition" required placeholder="Введите расшифровку..."></textarea>
                 <label>ПРИМЕР</label>
-                <input type="text" name="example">
+                <input type="text" name="example" placeholder="Фраза из радиоэфира...">
                 <button type="submit" class="submit-btn">[ ЗАГРУЗИТЬ В БАЗУ ]</button>
             </form>
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО: Авторизация -->
     <div id="loginModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header"><h3>АВТОРИЗАЦИЯ</h3><button class="close-btn" data-close>[ X ]</button></div>
             <form id="loginForm">
                 <label>ИДЕНТИФИКАТОР</label><input type="text" name="username" required>
                 <label>ПАРОЛЬ</label><input type="password" name="password" required>
-                <button type="submit" class="submit-btn">[ ВОЙТИ ]</button>
+                <button type="submit" class="submit-btn">[ ВОЙТИ В СИСТЕМУ ]</button>
             </form>
-            <div style="text-align: center; padding: 15px; border-top: 1px solid var(--border);">
-                Нет доступа? <a href="#" id="toRegister" style="color: var(--accent);">[ ЗАПРОСИТЬ ПРОФИЛЬ ]</a>
+            <div class="modal-footer">
+                Нет доступа? <a href="#" id="toRegister">[ ЗАПРОСИТЬ ПРОФИЛЬ ]</a>
             </div>
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО: Регистрация (с 152-ФЗ) -->
     <div id="registerModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header"><h3>СОЗДАНИЕ ПРОФИЛЯ</h3><button class="close-btn" data-close>[ X ]</button></div>
             <form id="registerForm">
                 <label>ЛОГИН *</label><input type="text" name="username" required minlength="3">
                 <label>ПАРОЛЬ *</label><input type="password" name="password" required minlength="6">
-                <label>EMAIL</label><input type="email" name="email">
+                <label>EMAIL</label><input type="email" name="email" placeholder="stalker@metro.ru">
+
                 <div class="consent">
                     <input type="checkbox" id="privacyConsent" name="privacyConsent" required>
-                    <label for="privacyConsent" style="font-weight: normal; margin: 0;">Я согласен на <a href="privacy.html" target="_blank">обработку данных (152-ФЗ)</a> *</label>
+                    <label for="privacyConsent" style="font-weight: normal; margin: 0; font-size: 0.8rem; line-height: 1.2; cursor: pointer;">
+                        Я согласен на <a href="privacy.html" target="_blank">обработку персональных данных</a> (152-ФЗ) *
+                    </label>
                 </div>
+
                 <button type="submit" class="submit-btn">[ ЗАРЕГИСТРИРОВАТЬСЯ ]</button>
             </form>
-            <div style="text-align: center; padding: 15px; border-top: 1px solid var(--border);">
-                Есть профиль? <a href="#" id="toLogin" style="color: var(--accent);">[ ВОЙТИ ]</a>
+            <div class="modal-footer">
+                Уже есть профиль? <a href="#" id="toLogin">[ АВТОРИЗОВАТЬСЯ ]</a>
             </div>
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО: Профиль -->
     <div id="profileModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header"><h3>ПРОФИЛЬ</h3><button class="close-btn" data-close>[ X ]</button></div>
             <form id="profileForm">
-                <label>ЛОГИН</label><input type="text" name="username" disabled style="opacity: 0.5;">
-                <label>EMAIL</label><input type="email" name="email">
+                <label>ИДЕНТИФИКАТОР</label><input type="text" name="username" disabled style="opacity: 0.5;">
+                <label>EMAIL</label><input type="email" name="email" placeholder="mail@example.com">
                 <button type="submit" class="submit-btn">[ ОБНОВИТЬ ]</button>
             </form>
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО: Пользователи (Админ) -->
     <div id="usersModal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header"><h3>РЕЕСТР ПЕРСОНАЛА</h3><button class="close-btn" data-close>[ X ]</button></div>
@@ -139,6 +154,7 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО: Логи системы -->
     <div id="logsModal" class="modal hidden">
         <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header"><h3>ЖУРНАЛ ОПЕРАЦИЙ</h3><button class="close-btn" data-close>[ X ]</button></div>
@@ -157,6 +173,7 @@
         </div>
     </div>
 
+    <!-- ИСПРАВЛЕННЫЙ ПОДВАЛ -->
     <footer>
         <div>METRO_DICT_SYS v2.0 // 2033</div>
         <div>
