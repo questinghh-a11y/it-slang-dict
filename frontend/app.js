@@ -2,50 +2,42 @@ const API = "/api";
 const TOKEN_KEY = "it_slang_token";
 
 const CATEGORY_ICONS = {
-  "Процесс разработки": "⚙️",
-  "Код и качество": "💻",
-  "Инфраструктура": "☁️",
-  "Команда и роли": "👥",
-  "Веб и API": "🌐",
-  "Базы данных": "🗄️",
-  "Безопасность": "🔒",
-  "Тестирование": "🧪",
-  "Git": "🌿",
-  "Data Science / ML": "🤖",
-  "Мобильная разработка": "📱",
-  "Сети": "📡",
+  "Процесс разработки": "[ DEV ]",
+  "Код и качество": "[ CODE ]",
+  "Инфраструктура": "[ OPS ]",
+  "Команда и роли": "[ TEAM ]",
+  "Веб и API": "[ WEB ]",
+  "Базы данных": "[ DB ]",
+  "Безопасность": "[ SEC ]",
+  "Тестирование": "[ QA ]",
+  "Git": "[ GIT ]",
+  "Data Science / ML": "[ AI ]",
+  "Мобильная разработка": "[ MOB ]",
+  "Сети": "[ NET ]",
 };
 
 const state = {
-  terms: [],
-  categories: [],
-  activeCategory: null,
-  search: "",
-  view: "categories",     // "categories" | "terms"
-  editingId: null,
-  viewingTerm: null,
-  token: localStorage.getItem(TOKEN_KEY) || null,
-  user: null,
+  terms: [], categories: [], activeCategory: null, search: "", view: "categories",
+  editingId: null, viewingTerm: null, token: localStorage.getItem(TOKEN_KEY) || null, user: null,
 };
 
-const logState = {
-  items: [],
-  offset: 0,
-  limit: 50,
-  total: 0,
-  actionsLoaded: false,
-};
+const logState = { items: [], offset: 0, limit: 50, total: 0, actionsLoaded: false };
 
 const $ = (sel) => document.querySelector(sel);
 const grid = $("#grid");
 const status = $("#status");
 const searchInput = $("#search");
 
-function toast(message, type = "info", timeout = 3500) {
+// --- УВЕДОМЛЕНИЯ ---
+function toast(message, type = "info", timeout = 4000) {
   const box = $("#toasts");
   const el = document.createElement("div");
   el.className = "toast " + type;
-  el.textContent = message;
+  let prefix = "[SYS] ";
+  if (type === "error") prefix = "[ERR] ";
+  if (type === "success") prefix = "[OK] ";
+  if (type === "warn") prefix = "[WRN] ";
+  el.textContent = prefix + message.toUpperCase();
   box.appendChild(el);
   setTimeout(() => {
     el.classList.add("leaving");
@@ -53,47 +45,49 @@ function toast(message, type = "info", timeout = 3500) {
   }, timeout);
 }
 
-function attachRipple() {
-  document.addEventListener("click", (e) => {
-    const btn = e.target.closest(".btn");
-    if (!btn) return;
-    const rect = btn.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const ripple = document.createElement("span");
-    ripple.className = "ripple";
-    ripple.style.width = ripple.style.height = size + "px";
-    ripple.style.left = (e.clientX - rect.left - size / 2) + "px";
-    ripple.style.top = (e.clientY - rect.top - size / 2) + "px";
-    btn.appendChild(ripple);
-    setTimeout(() => ripple.remove(), 600);
-  });
+// --- ТЕМА ---
+const themeToggleBtn = $("#themeToggle");
+if (localStorage.getItem("theme") === "light") {
+    document.documentElement.setAttribute("data-theme", "light");
+    themeToggleBtn.textContent = "[ ТЬМА ]";
 }
+themeToggleBtn.addEventListener("click", () => {
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+    if (isLight) {
+        document.documentElement.removeAttribute("data-theme");
+        themeToggleBtn.textContent = "[ СВЕТ ]";
+        localStorage.setItem("theme", "dark");
+    } else {
+        document.documentElement.setAttribute("data-theme", "light");
+        themeToggleBtn.textContent = "[ ТЬМА ]";
+        localStorage.setItem("theme", "light");
+    }
+});
 
+// --- API ---
 async function api(path, options = {}) {
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
   if (state.token) headers["X-Session-Token"] = state.token;
-
   const res = await fetch(API + path, { headers, ...options });
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
-
   if (res.status === 401 && state.token) {
     logout(true);
-    throw new Error("Сессия истекла, войдите заново");
+    throw new Error("СЕССИЯ ЗАВЕРШЕНА. ТРЕБУЕТСЯ АВТОРИЗАЦИЯ.");
   }
   if (!res.ok) {
-    const msg = data?.detail || `Ошибка ${res.status}`;
+    const msg = data?.detail || `ОШИБКА СИСТЕМЫ ${res.status}`;
     throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
   }
   return data;
 }
 
+// --- АВТОРИЗАЦИЯ ---
 function isAdmin() { return state.user?.role === "admin"; }
 function isLoggedIn() { return !!state.user; }
 
 function updateAuthUI() {
-  const logged = isLoggedIn();
-  const admin = isAdmin();
+  const logged = isLoggedIn(), admin = isAdmin();
   $("#addBtn").classList.toggle("hidden", !admin);
   $("#usersBtn").classList.toggle("hidden", !admin);
   $("#logsBtn").classList.toggle("hidden", !logged);
@@ -101,7 +95,7 @@ function updateAuthUI() {
   $("#logoutBtn").classList.toggle("hidden", !logged);
   const badge = $("#profileBtn");
   if (logged) {
-    badge.textContent = state.user.username + (admin ? " · админ" : "");
+    badge.textContent = `${admin ? "[ADMIN]" : "[STALKER]"} ${state.user.username.toUpperCase()}`;
     badge.classList.remove("hidden");
   } else {
     badge.classList.add("hidden");
@@ -109,39 +103,29 @@ function updateAuthUI() {
 }
 
 function setSession(token, user) {
-  state.token = token;
-  state.user = user;
+  state.token = token; state.user = user;
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
   updateAuthUI();
 }
 
 function logout(silent = false) {
-  if (state.token) {
-    fetch(API + "/auth/logout", {
-      method: "POST",
-      headers: { "X-Session-Token": state.token },
-    }).catch(() => {});
-  }
+  if (state.token) fetch(API + "/auth/logout", { method: "POST", headers: { "X-Session-Token": state.token } }).catch(() => {});
   setSession(null, null);
-  if (!silent) toast("Вы вышли из аккаунта", "info");
+  if (!silent) toast("ВЫХОД ИЗ СИСТЕМЫ ВЫПОЛНЕН");
   refreshView();
 }
 
 async function restoreSession() {
   if (!state.token) return;
   try {
-    const me = await fetch(API + "/auth/me", {
-      headers: { "X-Session-Token": state.token },
-    });
+    const me = await fetch(API + "/auth/me", { headers: { "X-Session-Token": state.token } });
     if (!me.ok) throw new Error();
     state.user = await me.json();
-  } catch {
-    setSession(null, null);
-  }
+  } catch { setSession(null, null); }
 }
 
-// ---------- переключение экранов ----------
+// --- ЭКРАНЫ ---
 function showView(view) {
   state.view = view;
   $("#categoriesView").classList.toggle("hidden", view !== "categories");
@@ -149,37 +133,30 @@ function showView(view) {
 }
 
 async function refreshView() {
-  // 1. Поиск — всегда показываем термины
   if (state.search) {
     showView("terms");
     $("#backToCategoriesBtn").classList.add("hidden");
-    $("#termsHeadTitle").textContent = `Поиск: «${state.search}»`;
+    $("#termsHeadTitle").textContent = `ПОИСК: «${state.search.toUpperCase()}»`;
     $("#termsHeadCount").textContent = "";
-    await loadTerms();
-    return;
+    await loadTerms(); return;
   }
-
-  // 2. Открыта категория — показываем её термины
   if (state.activeCategory) {
     showView("terms");
     $("#backToCategoriesBtn").classList.remove("hidden");
-    $("#termsHeadTitle").textContent = state.activeCategory;
-    await loadTerms();
-    return;
+    $("#termsHeadTitle").textContent = `СЕКТОР: ${state.activeCategory.toUpperCase()}`;
+    await loadTerms(); return;
   }
-
-  // 3. Иначе — экран разделов
   showView("categories");
   await loadCategories();
   renderCategoriesView();
 }
 
-// ---------- данные ----------
+// --- ДАННЫЕ ---
 async function loadCategories() {
   try {
     state.categories = await api("/categories");
     fillCategoryDatalist();
-  } catch (e) { /* тихо */ }
+  } catch (e) {}
 }
 
 async function loadTerms() {
@@ -187,111 +164,48 @@ async function loadTerms() {
   if (state.search) params.set("q", state.search);
   if (state.activeCategory && !state.search) params.set("category", state.activeCategory);
   params.set("limit", "500");
-
-  status.textContent = "Загружаю…";
+  status.textContent = "> ЗАГРУЗКА ДАННЫХ...";
   grid.innerHTML = "";
-
   try {
     const data = await api("/terms?" + params);
     state.terms = data.items;
     renderGrid();
-
-    if (data.total === 0) {
-      status.textContent = "Ничего не найдено.";
-      $("#termsHeadCount").textContent = "";
-    } else {
-      status.textContent = "";
-      $("#termsHeadCount").textContent =
-        `${data.total} ${pluralTerms(data.total)}`;
-    }
+    status.textContent = data.total === 0 ? "> [WRN] ЗАПИСИ НЕ НАЙДЕНЫ." : "";
+    $("#termsHeadCount").textContent = data.total > 0 ? `[ НАЙДЕНО: ${data.total} ]` : "";
   } catch (e) {
-    status.textContent = "Ошибка: " + e.message;
+    status.textContent = "> [ERR] ОШИБКА ЧТЕНИЯ БАЗЫ.";
     toast(e.message, "error");
   }
 }
 
-// ---------- отрисовка: разделы ----------
 function renderCategoriesView() {
   const box = $("#categoriesGrid");
   box.innerHTML = "";
-
-  state.categories.forEach((c, i) => {
+  state.categories.forEach((c) => {
     const card = document.createElement("div");
     card.className = "category-card";
-    card.style.setProperty("--i", Math.min(i, 30));
-
-    const icon = CATEGORY_ICONS[c.name] || "📁";
-
-    card.innerHTML = `
-      <div class="cat-icon">${icon}</div>
-      <div class="cat-name">${escapeHtml(c.name)}</div>
-      <div class="cat-count">${c.count} ${pluralTerms(c.count)}</div>
-      <div class="cat-arrow">→</div>
-    `;
-
-    card.onclick = () => {
-      state.activeCategory = c.name;
-      state.search = "";
-      searchInput.value = "";
-      refreshView();
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    };
-
+    const icon = CATEGORY_ICONS[c.name] || "[ DATA ]";
+    card.innerHTML = `<div class="cat-icon">${icon}</div><div class="cat-name">${c.name.toUpperCase()}</div><div class="cat-count">ЗАПИСЕЙ: ${c.count}</div><div class="cat-arrow">>></div>`;
+    card.onclick = () => { state.activeCategory = c.name; state.search = ""; searchInput.value = ""; refreshView(); window.scrollTo({ top: 0, behavior: "smooth" }); };
     box.appendChild(card);
   });
 }
 
-function pluralTerms(n) {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "термин";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return "термина";
-  return "терминов";
-}
-
-// ---------- отрисовка: термины ----------
 function renderGrid() {
   grid.innerHTML = "";
-  state.terms.forEach((t, i) => {
+  state.terms.forEach((t) => {
     const card = document.createElement("article");
     card.className = "card";
-    card.style.setProperty("--i", Math.min(i, 30));
-
-    const badge = document.createElement("span");
-    badge.className = "badge";
-    badge.textContent = t.category;
-
-    const h3 = document.createElement("h3");
-    h3.textContent = t.term;
-
-    const p = document.createElement("p");
-    p.className = "short";
-    p.textContent = t.definition;
-
-    card.append(badge, h3, p);
-    card.onclick = (e) => {
-      if (e.target.closest(".btn")) return;
-      openView(t);
-    };
-
+    card.innerHTML = `<span class="badge">[ ${t.category.toUpperCase()} ]</span><h3>${t.term}</h3><p class="short">${t.definition}</p>`;
+    card.onclick = (e) => { if (!e.target.closest(".btn")) openView(t); };
     if (isAdmin()) {
       const actions = document.createElement("div");
       actions.className = "card-actions";
-
-      const editBtn = document.createElement("button");
-      editBtn.className = "btn ghost";
-      editBtn.textContent = "✏ Изменить";
-      editBtn.onclick = (e) => { e.stopPropagation(); openForm(t); };
-
-      const delBtn = document.createElement("button");
-      delBtn.className = "btn danger";
-      delBtn.textContent = "🗑 Удалить";
-      delBtn.onclick = (e) => { e.stopPropagation(); deleteTerm(t); };
-
-      actions.append(editBtn, delBtn);
+      actions.innerHTML = `<button class="btn ghost btn-edit">[ ИЗМЕНИТЬ ]</button><button class="btn danger btn-del">[ УДАЛИТЬ ]</button>`;
+      actions.querySelector(".btn-edit").onclick = (e) => { e.stopPropagation(); openForm(t); };
+      actions.querySelector(".btn-del").onclick = (e) => { e.stopPropagation(); deleteTerm(t); };
       card.appendChild(actions);
     }
-
     grid.appendChild(card);
   });
 }
@@ -299,177 +213,117 @@ function renderGrid() {
 function fillCategoryDatalist() {
   const dl = $("#catList");
   dl.innerHTML = "";
-  state.categories.forEach((c) => {
-    const opt = document.createElement("option");
-    opt.value = c.name;
-    dl.appendChild(opt);
-  });
+  state.categories.forEach((c) => { const opt = document.createElement("option"); opt.value = c.name; dl.appendChild(opt); });
 }
 
 function escapeHtml(str) {
-  return String(str).replace(/[&<>"']/g, (s) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  })[s]);
+  return String(str).replace(/[&<>"']/g, (s) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[s]);
 }
 
-// ---------- модалки ----------
+// --- МОДАЛКИ ---
 function openModal(id) { $(id).classList.remove("hidden"); }
+function closeAll() {
+  ["#viewModal", "#formModal", "#loginModal", "#registerModal", "#logsModal", "#usersModal", "#profileModal"].forEach(id => $(id).classList.add("hidden"));
+  state.editingId = null; state.viewingTerm = null;
+}
 
 function openView(term) {
   state.viewingTerm = term;
-  $("#viewCategory").textContent = term.category;
-  $("#viewTerm").textContent = term.term;
+  $("#viewCategory").textContent = `[ СЕКТОР: ${term.category.toUpperCase()} ]`;
+  $("#viewTerm").textContent = term.term.toUpperCase();
   $("#viewDefinition").textContent = term.definition;
-
   const wrap = $("#viewExampleWrap");
   if (term.example && term.example.trim()) {
-    $("#viewExample").textContent = term.example;
-    wrap.style.display = "";
-  } else {
-    wrap.style.display = "none";
+    $("#viewExample").textContent = `> ${term.example}`; wrap.style.display = "";
+  } else { wrap.style.display = "none"; }
+  $("#viewMeta").textContent = term.created_by ? `ОПЕРАТОР: ${term.created_by.toUpperCase()} // ДАТА: ${new Date(term.created_at).toLocaleString("ru")}` : "";
+
+  let copyBtn = $("#copyTermBtn");
+  if (!copyBtn) {
+    copyBtn = document.createElement("button"); copyBtn.id = "copyTermBtn"; copyBtn.className = "btn ghost"; copyBtn.style.marginTop = "15px"; copyBtn.textContent = "[ СКОПИРОВАТЬ ДАННЫЕ ]";
+    $("#viewModal .modal-content div[style*='padding']").appendChild(copyBtn);
   }
-  $("#viewMeta").textContent = term.created_by
-    ? `Добавил: ${term.created_by} · ${new Date(term.created_at).toLocaleString("ru")}`
-    : "";
+  copyBtn.onclick = () => {
+    navigator.clipboard.writeText(`${term.term}\n${term.definition}\n${term.example || ""}`).then(() => toast("ДАННЫЕ СКОПИРОВАНЫ", "success")).catch(() => toast("СБОЙ БУФЕРА", "error"));
+  };
   openModal("#viewModal");
 }
 
 function openForm(term = null) {
-  if (!isAdmin()) { toast("Только администратор может управлять терминами.", "warn"); return; }
+  if (!isAdmin()) { toast("ТРЕБУЮТСЯ ПРАВА АДМИНИСТРАТОРА", "warn"); return; }
   state.editingId = term ? term.id : null;
-  $("#formTitle").textContent = term ? "Редактировать термин" : "Новый термин";
-  const form = $("#termForm");
-  form.reset();
-  if (term) {
-    form.term.value = term.term;
-    form.category.value = term.category;
-    form.definition.value = term.definition;
-    form.example.value = term.example || "";
-  }
-  openModal("#formModal");
-  form.term.focus();
+  $("#formTitle").textContent = term ? "РЕДАКТИРОВАНИЕ ЗАПИСИ" : "ВНЕСЕНИЕ НОВОЙ ЗАПИСИ";
+  const form = $("#termForm"); form.reset();
+  if (term) { form.term.value = term.term; form.category.value = term.category; form.definition.value = term.definition; form.example.value = term.example || ""; }
+  openModal("#formModal"); form.term.focus();
 }
 
 async function submitForm(e) {
-  e.preventDefault();
-  const form = e.target;
-  const payload = {
-    term: form.term.value.trim(),
-    category: form.category.value.trim(),
-    definition: form.definition.value.trim(),
-    example: form.example.value.trim(),
-  };
+  e.preventDefault(); const form = e.target;
+  const payload = { term: form.term.value.trim(), category: form.category.value.trim(), definition: form.definition.value.trim(), example: form.example.value.trim() };
   try {
     if (state.editingId) {
-      await api("/terms/" + state.editingId, { method: "PUT", body: JSON.stringify(payload) });
-      toast("Термин обновлён", "success");
+      await api("/terms/" + state.editingId, { method: "PUT", body: JSON.stringify(payload) }); toast("ЗАПИСЬ ОБНОВЛЕНА", "success");
     } else {
-      await api("/terms", { method: "POST", body: JSON.stringify(payload) });
-      toast("Термин добавлен", "success");
+      await api("/terms", { method: "POST", body: JSON.stringify(payload) }); toast("ЗАПИСЬ ДОБАВЛЕНА", "success");
     }
-    closeAll();
-    await afterTermChange();
-  } catch (err) { toast("Не удалось сохранить: " + err.message, "error"); }
+    closeAll(); await afterTermChange();
+  } catch (err) { toast("ОШИБКА: " + err.message, "error"); }
 }
 
 async function deleteTerm(term) {
   if (!isAdmin()) return;
-  if (!confirm(`Удалить термин «${term.term}»?`)) return;
-  try {
-    await api("/terms/" + term.id, { method: "DELETE" });
-    toast("Термин удалён", "success");
-    await afterTermChange();
-  } catch (err) { toast("Не удалось удалить: " + err.message, "error"); }
+  if (!confirm(`[ВНИМАНИЕ] УДАЛИТЬ «${term.term}»?`)) return;
+  try { await api("/terms/" + term.id, { method: "DELETE" }); toast("ЗАПИСЬ УНИЧТОЖЕНА", "success"); await afterTermChange(); }
+  catch (err) { toast("СБОЙ: " + err.message, "error"); }
 }
 
 async function afterTermChange() {
   await loadCategories();
-  if (state.view === "categories") {
-    renderCategoriesView();
-  } else {
-    await loadTerms();
-  }
+  if (state.view === "categories") renderCategoriesView(); else await loadTerms();
 }
 
+// --- АВТОРИЗАЦИЯ ФОРМЫ ---
 async function submitLogin(e) {
-  e.preventDefault();
-  const f = e.target;
+  e.preventDefault(); const f = e.target;
   try {
-    const data = await api("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username: f.username.value, password: f.password.value }),
-    });
-    setSession(data.token, data.user);
-    closeAll();
-    refreshView();
-    toast(`Добро пожаловать, ${data.user.username}!`, "success");
+    const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ username: f.username.value, password: f.password.value }) });
+    setSession(data.token, data.user); closeAll(); refreshView(); toast(`ДОСТУП РАЗРЕШЕН. ПРИВЕТ, ${data.user.username.toUpperCase()}`, "success");
   } catch (err) { toast(err.message, "error"); }
 }
 
 async function submitRegister(e) {
-  e.preventDefault();
-  const f = e.target;
+  e.preventDefault(); const f = e.target;
+
+  // Проверка 152-ФЗ (на всякий случай, если HTML required обойдут)
+  if (!f.privacyConsent.checked) { toast("ТРЕБУЕТСЯ СОГЛАСИЕ (152-ФЗ)", "error"); return; }
+
   try {
-    await api("/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        username: f.username.value,
-        password: f.password.value,
-        email: f.email.value.trim() || null,
-      }),
-    });
-    const data = await api("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ username: f.username.value, password: f.password.value }),
-    });
-    setSession(data.token, data.user);
-    closeAll();
-    refreshView();
-    toast(`Аккаунт создан. Привет, ${data.user.username}!`, "success");
+    await api("/auth/register", { method: "POST", body: JSON.stringify({ username: f.username.value, password: f.password.value, email: f.email.value.trim() || null }) });
+    const data = await api("/auth/login", { method: "POST", body: JSON.stringify({ username: f.username.value, password: f.password.value }) });
+    setSession(data.token, data.user); closeAll(); refreshView(); toast(`ПРОФИЛЬ СОЗДАН. ДОБРО ПОЖАЛОВАТЬ`, "success");
   } catch (err) { toast(err.message, "error"); }
 }
 
 function openProfile() {
   if (!isLoggedIn()) return;
-  const f = $("#profileForm");
-  f.reset();
-  f.username.value = state.user.username;
-  f.email.value = state.user.email || "";
+  const f = $("#profileForm"); f.reset(); f.username.value = state.user.username; f.email.value = state.user.email || "";
   openModal("#profileModal");
 }
 
 async function submitProfile(e) {
-  e.preventDefault();
-  const f = e.target;
+  e.preventDefault(); const f = e.target;
   try {
-    const updated = await api("/auth/profile", {
-      method: "PUT",
-      body: JSON.stringify({ email: f.email.value.trim() || null }),
-    });
-    state.user = updated;
-    closeAll();
-    toast("Профиль обновлён", "success");
+    const updated = await api("/auth/profile", { method: "PUT", body: JSON.stringify({ email: f.email.value.trim() || null }) });
+    state.user = updated; closeAll(); toast("ПРОФИЛЬ ОБНОВЛЕН", "success");
   } catch (err) { toast(err.message, "error"); }
 }
 
-// ---------- журнал ----------
+// --- ЛОГИ ---
 function shortUA(ua) {
   if (!ua) return "";
-  const browser =
-    /Edg\//.test(ua) ? "Edge" :
-    /OPR\//.test(ua) ? "Opera" :
-    /YaBrowser/.test(ua) ? "Yandex" :
-    /Chrome\//.test(ua) ? "Chrome" :
-    /Firefox\//.test(ua) ? "Firefox" :
-    /Safari\//.test(ua) ? "Safari" :
-    "браузер";
-  const os =
-    /Windows/.test(ua) ? "Windows" :
-    /iPhone|iPad/.test(ua) ? "iOS" :
-    /Android/.test(ua) ? "Android" :
-    /Mac OS X/.test(ua) ? "macOS" :
-    /Linux/.test(ua) ? "Linux" :
-    "";
+  const browser = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /YaBrowser/.test(ua) ? "Yandex" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "браузер";
+  const os = /Windows/.test(ua) ? "Windows" : /iPhone|iPad/.test(ua) ? "iOS" : /Android/.test(ua) ? "Android" : /Mac OS X/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "";
   return os ? `${browser} · ${os}` : browser;
 }
 
@@ -478,112 +332,58 @@ function parseDetails(raw) {
   let obj;
   try { obj = JSON.parse(raw); } catch { return escapeHtml(raw); }
   if (typeof obj !== "object" || obj === null) return escapeHtml(String(obj));
-
   const lines = [];
   for (const [k, v] of Object.entries(obj)) {
     if (v && typeof v === "object" && "from" in v && "to" in v) {
-      const from = v.from === null || v.from === undefined ? "—" : String(v.from);
-      const to = v.to === null || v.to === undefined ? "—" : String(v.to);
-      lines.push(`<div><b>${escapeHtml(k)}</b>: <s>${escapeHtml(from)}</s> → <b>${escapeHtml(to)}</b></div>`);
-    } else if (typeof v === "object" && v !== null) {
-      lines.push(`<div><b>${escapeHtml(k)}</b>: ${escapeHtml(JSON.stringify(v))}</div>`);
-    } else {
-      lines.push(`<div><b>${escapeHtml(k)}</b>: ${escapeHtml(String(v))}</div>`);
-    }
+      lines.push(`<div><b>${escapeHtml(k)}</b>: <s>${escapeHtml(v.from)}</s> -> <b>${escapeHtml(v.to)}</b></div>`);
+    } else { lines.push(`<div><b>${escapeHtml(k)}</b>: ${escapeHtml(String(v))}</div>`); }
   }
   return lines.join("");
 }
 
 async function openLogs() {
   $("#logFilterUser").classList.toggle("hidden", !isAdmin());
-
   if (!logState.actionsLoaded) {
     try {
-      const actions = await api("/logs/actions");
-      const list = Array.isArray(actions) ? actions : [];
-      const sel = $("#logFilterAction");
-      sel.innerHTML = '<option value="">Все действия</option>' +
-        list.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("");
+      const actions = await api("/logs/actions"); const list = Array.isArray(actions) ? actions : [];
+      $("#logFilterAction").innerHTML = '<option value="">ВСЕ ДЕЙСТВИЯ</option>' + list.map(a => `<option value="${escapeHtml(a)}">${escapeHtml(a.toUpperCase())}</option>`).join("");
       logState.actionsLoaded = true;
-    } catch (e) { /* тихо */ }
+    } catch (e) {}
   }
-
-  logState.items = [];
-  logState.offset = 0;
-  $("#logsList").innerHTML = "";
-  await loadLogsPage(true);
-  openModal("#logsModal");
+  logState.items = []; logState.offset = 0; $("#logsList").innerHTML = "";
+  await loadLogsPage(true); openModal("#logsModal");
 }
 
 function buildLogParams() {
-  const params = new URLSearchParams();
-  const u = $("#logFilterUser").value.trim();
-  const a = $("#logFilterAction").value;
-  const f = $("#logFilterFrom").value;
-  const t = $("#logFilterTo").value;
-  if (u && isAdmin()) params.set("username", u);
-  if (a) params.set("action", a);
-  if (f) params.set("date_from", f);
-  if (t) params.set("date_to", t);
+  const params = new URLSearchParams(); const u = $("#logFilterUser").value.trim(); const a = $("#logFilterAction").value; const f = $("#logFilterFrom").value; const t = $("#logFilterTo").value;
+  if (u && isAdmin()) params.set("username", u); if (a) params.set("action", a); if (f) params.set("date_from", f); if (t) params.set("date_to", t);
   return params;
 }
 
 async function loadLogsPage(reset = false) {
-  if (reset) {
-    logState.items = [];
-    logState.offset = 0;
-    $("#logsList").innerHTML = "";
-  }
-  const params = buildLogParams();
-  params.set("limit", logState.limit);
-  params.set("offset", logState.offset);
-
+  if (reset) { logState.items = []; logState.offset = 0; $("#logsList").innerHTML = ""; }
+  const params = buildLogParams(); params.set("limit", logState.limit); params.set("offset", logState.offset);
   try {
     const data = await api("/logs?" + params);
-    const items = Array.isArray(data) ? data : (data?.items || []);
-    const total = Array.isArray(data) ? data.length : (data?.total || 0);
-
-    logState.total = total;
-    logState.items = logState.items.concat(items);
-    logState.offset += items.length;
-
-    renderLogs();
-    $("#logMoreBtn").classList.toggle("hidden", logState.offset >= logState.total);
-    $("#logTotal").textContent =
-      `Всего: ${logState.total} · показано ${logState.items.length}`;
+    const items = Array.isArray(data) ? data : (data?.items || []); const total = Array.isArray(data) ? data.length : (data?.total || 0);
+    logState.total = total; logState.items = logState.items.concat(items); logState.offset += items.length;
+    renderLogs(); $("#logMoreBtn").classList.toggle("hidden", logState.offset >= logState.total);
+    $("#logTotal").textContent = `ВСЕГО: ${logState.total} // ОТОБРАЖЕНО: ${logState.items.length}`;
   } catch (e) { toast(e.message, "error"); }
 }
 
 function renderLogs() {
-  const box = $("#logsList");
-  box.innerHTML = "";
-  logState.items.forEach((r, i) => {
-    const div = document.createElement("div");
-    div.className = "log-row";
-    div.style.setProperty("--i", Math.min(i, 30));
-
-    const detailsHtml = parseDetails(r.details);
-    const target = r.target_name ? ` · ${escapeHtml(r.target_name)}` : "";
-
-    const metaParts = [];
-    if (r.ip_address) metaParts.push(`IP: ${escapeHtml(r.ip_address)}`);
-    if (r.user_agent) metaParts.push(shortUA(r.user_agent));
-    if (r.session_ref) metaParts.push(`сессия #${escapeHtml(r.session_ref)}`);
-
+  const box = $("#logsList"); box.innerHTML = "";
+  logState.items.forEach((r) => {
+    const div = document.createElement("div"); div.className = "log-row";
+    const detailsHtml = parseDetails(r.details); const target = r.target_name ? ` // ${escapeHtml(r.target_name).toUpperCase()}` : "";
+    const meta = [];
+    if (r.ip_address) meta.push(`IP: ${r.ip_address}`); if (r.user_agent) meta.push(shortUA(r.user_agent)); if (r.session_ref) meta.push(`СЕССИЯ: #${r.session_ref}`);
     div.innerHTML = `
-      <div class="log-top">
-        <span><span class="log-action ${r.action}">${escapeHtml(r.action)}</span> ${escapeHtml(r.username)}${target}</span>
-        <span class="log-time">${new Date(r.created_at).toLocaleString("ru")}</span>
-      </div>
-      ${metaParts.length ? `<div class="log-meta">${metaParts.map(m => `<span>${m}</span>`).join("")}</div>` : ""}
-      ${detailsHtml ? `<div class="log-details-full">${detailsHtml}</div>` : ""}
-    `;
-
-    if (detailsHtml) {
-      div.onclick = () => div.classList.toggle("expanded");
-    } else {
-      div.classList.add("no-details");
-    }
+      <div class="log-top"><span><span class="log-action ${r.action}">[${r.action.toUpperCase()}]</span> ${escapeHtml(r.username).toUpperCase()}${target}</span><span class="log-time">${new Date(r.created_at).toLocaleString("ru")}</span></div>
+      ${meta.length ? `<div class="log-meta">${meta.map(m => `<span>[ ${m} ]</span>`).join("")}</div>` : ""}
+      ${detailsHtml ? `<div class="log-details-full">${detailsHtml}</div>` : ""}`;
+    if (detailsHtml) div.onclick = () => div.classList.toggle("expanded"); else div.classList.add("no-details");
     box.appendChild(div);
   });
 }
@@ -591,93 +391,43 @@ function renderLogs() {
 async function exportLogsCSV() {
   const params = buildLogParams();
   try {
-    const res = await fetch(API + "/logs/export?" + params, {
-      headers: state.token ? { "X-Session-Token": state.token } : {},
-    });
-    if (!res.ok) {
-      const d = await res.json().catch(() => null);
-      throw new Error(d?.detail || `Ошибка ${res.status}`);
-    }
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `logs_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast("Файл скачан", "success");
-  } catch (e) { toast("Не удалось выгрузить: " + e.message, "error"); }
+    const res = await fetch(API + "/logs/export?" + params, { headers: state.token ? { "X-Session-Token": state.token } : {} });
+    if (!res.ok) throw new Error("ОШИБКА " + res.status);
+    const blob = await res.blob(); const url = URL.createObjectURL(blob); const a = document.createElement("a");
+    a.href = url; a.download = `logs_${new Date().toISOString().slice(0, 10)}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    toast("ЭКСПОРТ ЗАВЕРШЕН", "success");
+  } catch (e) { toast("СБОЙ ЭКСПОРТА", "error"); }
 }
 
 async function openUsers() {
   try {
-    const users = await api("/users");
-    const list = Array.isArray(users) ? users : [];
-    const box = $("#usersList");
-    box.innerHTML = "";
-    list.forEach((u, i) => {
-      const row = document.createElement("div");
-      row.className = "user-row";
-      row.style.setProperty("--i", Math.min(i, 30));
-      row.innerHTML = `
-        <div>
-          <div class="user-name">${escapeHtml(u.username)}</div>
-          <div class="user-role">id ${u.id} · с ${new Date(u.created_at).toLocaleDateString("ru")}${u.email ? " · " + escapeHtml(u.email) : ""}</div>
-        </div>
-        <select data-uid="${u.id}">
-          <option value="user" ${u.role === "user" ? "selected" : ""}>пользователь</option>
-          <option value="admin" ${u.role === "admin" ? "selected" : ""}>админ</option>
-        </select>
-      `;
+    const users = await api("/users"); const box = $("#usersList"); box.innerHTML = "";
+    users.forEach((u) => {
+      const row = document.createElement("div"); row.className = "user-row";
+      row.innerHTML = `<div><div class="user-name">${escapeHtml(u.username).toUpperCase()}</div><div class="user-role">ID: ${u.id} // С: ${new Date(u.created_at).toLocaleDateString("ru")}${u.email ? " // " + escapeHtml(u.email) : ""}</div></div>
+        <select data-uid="${u.id}"><option value="user" ${u.role === "user" ? "selected" : ""}>ОПЕРАТОР</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>АДМИНИСТРАТОР</option></select>`;
       row.querySelector("select").onchange = async (e) => {
-        try {
-          await api("/users/" + u.id + "/role", {
-            method: "PUT",
-            body: JSON.stringify({ role: e.target.value }),
-          });
-          toast(`Роль ${u.username} изменена`, "success");
-        } catch (err) {
-          toast(err.message, "error");
-          e.target.value = u.role;
-        }
+        try { await api("/users/" + u.id + "/role", { method: "PUT", body: JSON.stringify({ role: e.target.value }) }); toast(`ПРАВА ИЗМЕНЕНЫ`, "success"); }
+        catch (err) { toast(err.message, "error"); e.target.value = u.role; }
       };
       box.appendChild(row);
     });
     openModal("#usersModal");
-  } catch (e) { toast("Не удалось загрузить пользователей: " + e.message, "error"); }
+  } catch (e) { toast("СБОЙ ЗАГРУЗКИ", "error"); }
 }
 
-function closeAll() {
-  ["#viewModal", "#formModal", "#loginModal", "#registerModal",
-   "#logsModal", "#usersModal", "#profileModal"]
-    .forEach(id => $(id).classList.add("hidden"));
-  state.editingId = null;
-  state.viewingTerm = null;
-}
-
-// ---------- события ----------
+// --- СОБЫТИЯ ---
 let searchTimer;
 searchInput.addEventListener("input", (e) => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     state.search = e.target.value.trim();
-    if (state.search) {
-      state.activeCategory = null;
-    }
+    if (state.search) state.activeCategory = null;
     refreshView();
   }, 250);
 });
 
-$("#backToCategoriesBtn").addEventListener("click", () => {
-  state.activeCategory = null;
-  state.search = "";
-  searchInput.value = "";
-  refreshView();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
-
+$("#backToCategoriesBtn").addEventListener("click", () => { state.activeCategory = null; state.search = ""; searchInput.value = ""; refreshView(); window.scrollTo({ top: 0, behavior: "smooth" }); });
 $("#addBtn").addEventListener("click", () => openForm());
 $("#termForm").addEventListener("submit", submitForm);
 $("#loginForm").addEventListener("submit", submitLogin);
@@ -685,49 +435,23 @@ $("#registerForm").addEventListener("submit", submitRegister);
 $("#profileForm").addEventListener("submit", submitProfile);
 $("#usersBtn").addEventListener("click", openUsers);
 $("#logsBtn").addEventListener("click", openLogs);
-
 $("#logApplyBtn").addEventListener("click", () => loadLogsPage(true));
-$("#logResetBtn").addEventListener("click", () => {
-  $("#logFilterUser").value = "";
-  $("#logFilterAction").value = "";
-  $("#logFilterFrom").value = "";
-  $("#logFilterTo").value = "";
-  loadLogsPage(true);
-});
+$("#logResetBtn").addEventListener("click", () => { $("#logFilterUser").value = ""; $("#logFilterAction").value = ""; $("#logFilterFrom").value = ""; $("#logFilterTo").value = ""; loadLogsPage(true); });
 $("#logExportBtn").addEventListener("click", exportLogsCSV);
 $("#logMoreBtn").addEventListener("click", () => loadLogsPage(false));
-
 $("#profileBtn").addEventListener("click", openProfile);
 $("#loginBtn").addEventListener("click", () => openModal("#loginModal"));
 $("#logoutBtn").addEventListener("click", () => logout());
+$("#toRegister").addEventListener("click", (e) => { e.preventDefault(); closeAll(); openModal("#registerModal"); });
+$("#toLogin").addEventListener("click", (e) => { e.preventDefault(); closeAll(); openModal("#loginModal"); });
+$("#randomBtn").addEventListener("click", async () => { try { openView(await api("/random")); } catch (e) { toast(e.message, "error"); } });
 
-$("#toRegister").addEventListener("click", (e) => {
-  e.preventDefault();
-  closeAll();
-  openModal("#registerModal");
-});
-$("#toLogin").addEventListener("click", (e) => {
-  e.preventDefault();
-  closeAll();
-  openModal("#loginModal");
-});
-
-$("#randomBtn").addEventListener("click", async () => {
-  try {
-    const t = await api("/random");
-    openView(t);
-  } catch (e) { toast(e.message, "error"); }
-});
-
-document.querySelectorAll("[data-close]").forEach(el =>
-  el.addEventListener("click", closeAll));
-document.querySelectorAll(".modal").forEach(m =>
-  m.addEventListener("click", (e) => { if (e.target === m) closeAll(); }));
+document.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", closeAll));
+document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", (e) => { if (e.target === m) closeAll(); }));
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
 
-// ---------- старт ----------
+// --- СТАРТ ---
 (async function init() {
-  attachRipple();
   await restoreSession();
   updateAuthUI();
   await refreshView();
