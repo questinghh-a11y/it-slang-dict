@@ -497,7 +497,7 @@ function triggerStalkerEgg() {
     const textEl = document.getElementById("stalkerText");
 
     // Знаменитая фраза Сидоровича
-    const phrase = "КТО ТЫ СТАЛКЕР? НИКТО... Я СИДОРОВИЧ.";
+    const phrase = "КТО ТЫ СТАЛКЕР? НИКТО. ОБЫЧНЫЙ БРОДЯГА.";.";
 
     overlay.classList.remove("hidden");
     textEl.textContent = "";
