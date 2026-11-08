@@ -419,9 +419,9 @@ async function openUsers() {
 let searchTimer;
 searchInput.addEventListener("input", (e) => {
   // ==========================================
-  // ПАСХАЛКА "КТО ТЫ СТАЛКЕР" (Викторович)
+  // ПАСХАЛКА "КТО ТЫ СТАЛКЕР" (Сидорович)
   // ==========================================
-  if (e.target.value.trim().toLowerCase() === "викторович") {
+  if (e.target.value.trim().toLowerCase() === "сидорович") {
     e.target.value = "";
     triggerStalkerEgg();
     return;
@@ -495,7 +495,9 @@ if (statusDot) {
 function triggerStalkerEgg() {
     const overlay = document.getElementById("stalkerOverlay");
     const textEl = document.getElementById("stalkerText");
-    const phrase = "КТО ТЫ СТАЛКЕР?";
+
+    // Знаменитая фраза Сидоровича
+    const phrase = "КТО ТЫ СТАЛКЕР? НИКТО... Я СИДОРОВИЧ.";
 
     overlay.classList.remove("hidden");
     textEl.textContent = "";
@@ -507,7 +509,7 @@ function triggerStalkerEgg() {
         if (i >= phrase.length) {
             clearInterval(typeInterval);
         }
-    }, 120);
+    }, 100); // Чуть ускорил печать, чтобы фраза успела влезть
 
     setTimeout(() => {
         overlay.style.transition = "opacity 1s";
@@ -518,7 +520,7 @@ function triggerStalkerEgg() {
             overlay.style.transition = "";
             textEl.textContent = "";
         }, 1000);
-    }, 4000);
+    }, 5000); // Даем 5 секунд, чтобы прочитать
 }
 
 // Секретное сообщение в консоль
