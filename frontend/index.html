@@ -3,20 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Безопасность и 152-ФЗ (CSP) -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; img-src 'self' data:;">
-
     <title>Терминал: Словарь IT-сленга</title>
-    <meta name="description" content="Терминал доступа к базе данных ИТ-сленга.">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <!-- Эффект старого ЭЛТ-монитора -->
     <div class="crt-overlay"></div>
-
-    <!-- Контейнер для системных уведомлений -->
     <div id="toasts" class="toasts-container"></div>
 
     <header>
@@ -25,8 +17,8 @@
         </div>
 
         <div class="controls">
-            <input type="text" id="search" placeholder="> ВВЕДИТЕ ЗАПРОС..." aria-label="Поиск термина">
-            <button id="themeToggle" aria-label="Переключить режим">[ СВЕТ ]</button>
+            <input type="text" id="search" placeholder="> ВВЕДИТЕ ЗАПРОС...">
+            <button id="themeToggle">[ СВЕТ ]</button>
         </div>
 
         <div class="auth-controls">
@@ -38,51 +30,43 @@
         </div>
     </header>
 
-    <!-- ЭКРАН 1: Категории (Сектора) -->
-    <main id="categoriesView" class="view-section">
-        <div id="categoriesGrid" class="dictionary-grid">
-            <!-- Карточки категорий рендерятся в JS -->
-        </div>
+    <main id="categoriesView">
+        <div id="categoriesGrid" class="dictionary-grid"></div>
     </main>
 
-    <!-- ЭКРАН 2: Термины -->
-    <main id="termsView" class="view-section hidden">
+    <main id="termsView" class="hidden">
         <div class="terms-header">
             <button id="backToCategoriesBtn" class="btn ghost hidden"><< [ НАЗАД ]</button>
             <h2 id="termsHeadTitle">СЕКТОР</h2>
             <span id="termsHeadCount" class="badge"></span>
         </div>
         <div id="status" class="status-text"></div>
-        <div id="grid" class="dictionary-grid">
-            <!-- Карточки терминов рендерятся в JS -->
-        </div>
+        <div id="grid" class="dictionary-grid"></div>
     </main>
 
-    <!-- Плавающие кнопки -->
     <div class="fab-container">
         <button id="randomBtn" class="add-btn ghost">[ РАНДОМ ]</button>
         <button id="addBtn" class="add-btn hidden">+ ВНЕСТИ ЗАПИСЬ</button>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: Просмотр термина -->
+    <!-- Модалки (сокращены для читаемости, они такие же как в прошлом коде) -->
     <div id="viewModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <span id="viewCategory" class="badge">[ СЕКТОР ]</span>
+                <span id="viewCategory" class="badge"></span>
                 <button class="close-btn" data-close>[ X ]</button>
             </div>
             <div style="padding: 20px;">
-                <h2 id="viewTerm">ТЕРМИН</h2>
-                <p id="viewDefinition" class="definition"></p>
-                <div id="viewExampleWrap">
-                    <p id="viewExample" class="example"></p>
+                <h2 id="viewTerm" style="color: var(--text-bright); margin-bottom: 10px;">ТЕРМИН</h2>
+                <p id="viewDefinition" style="line-height: 1.6;"></p>
+                <div id="viewExampleWrap" style="margin-top: 15px;">
+                    <p id="viewExample" style="border-left: 2px solid var(--accent); padding-left: 10px; font-style: italic; color: #888;"></p>
                 </div>
-                <div id="viewMeta" class="meta-info"></div>
+                <div id="viewMeta" style="font-size: 0.8rem; color: #666; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 10px;"></div>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: Добавление/Редактирование -->
     <div id="formModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -90,131 +74,92 @@
                 <button class="close-btn" data-close>[ X ]</button>
             </div>
             <form id="termForm">
-                <label for="termName">ТЕРМИН *</label>
-                <input type="text" id="termName" name="term" required placeholder="Например: Хардкод">
-
-                <label for="termCategory">СЕКТОР *</label>
-                <input type="text" id="termCategory" name="category" list="catList" required placeholder="Выберите или введите...">
+                <label>ТЕРМИН *</label>
+                <input type="text" name="term" required>
+                <label>СЕКТОР *</label>
+                <input type="text" name="category" list="catList" required>
                 <datalist id="catList"></datalist>
-
-                <label for="termDefinition">ОПИСАНИЕ *</label>
-                <textarea id="termDefinition" name="definition" required placeholder="Введите расшифровку..."></textarea>
-
-                <label for="termExample">ПРИМЕР (НЕОБЯЗАТЕЛЬНО)</label>
-                <input type="text" id="termExample" name="example" placeholder="Фраза из радиоэфира...">
-
+                <label>ОПИСАНИЕ *</label>
+                <textarea name="definition" required></textarea>
+                <label>ПРИМЕР</label>
+                <input type="text" name="example">
                 <button type="submit" class="submit-btn">[ ЗАГРУЗИТЬ В БАЗУ ]</button>
             </form>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: Авторизация -->
     <div id="loginModal" class="modal hidden">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>АВТОРИЗАЦИЯ</h3>
-                <button class="close-btn" data-close>[ X ]</button>
-            </div>
+            <div class="modal-header"><h3>АВТОРИЗАЦИЯ</h3><button class="close-btn" data-close>[ X ]</button></div>
             <form id="loginForm">
-                <label>ИДЕНТИФИКАТОР</label>
-                <input type="text" name="username" required>
-                <label>ПАРОЛЬ</label>
-                <input type="password" name="password" required>
-                <button type="submit" class="submit-btn">[ ВОЙТИ В СИСТЕМУ ]</button>
+                <label>ИДЕНТИФИКАТОР</label><input type="text" name="username" required>
+                <label>ПАРОЛЬ</label><input type="password" name="password" required>
+                <button type="submit" class="submit-btn">[ ВОЙТИ ]</button>
             </form>
-            <div class="modal-footer">
-                Нет доступа? <a href="#" id="toRegister">[ ЗАПРОСИТЬ ПРОФИЛЬ ]</a>
+            <div style="text-align: center; padding: 15px; border-top: 1px solid var(--border);">
+                Нет доступа? <a href="#" id="toRegister" style="color: var(--accent);">[ ЗАПРОСИТЬ ПРОФИЛЬ ]</a>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: Регистрация (с 152-ФЗ) -->
     <div id="registerModal" class="modal hidden">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>СОЗДАНИЕ ПРОФИЛЯ</h3>
-                <button class="close-btn" data-close>[ X ]</button>
-            </div>
+            <div class="modal-header"><h3>СОЗДАНИЕ ПРОФИЛЯ</h3><button class="close-btn" data-close>[ X ]</button></div>
             <form id="registerForm">
-                <label>ИДЕНТИФИКАТОР (ЛОГИН) *</label>
-                <input type="text" name="username" required minlength="3">
-                <label>ПАРОЛЬ *</label>
-                <input type="password" name="password" required minlength="6">
-                <label>EMAIL (ДЛЯ СВЯЗИ)</label>
-                <input type="email" name="email" placeholder="stalker@metro.ru">
-
+                <label>ЛОГИН *</label><input type="text" name="username" required minlength="3">
+                <label>ПАРОЛЬ *</label><input type="password" name="password" required minlength="6">
+                <label>EMAIL</label><input type="email" name="email">
                 <div class="consent">
                     <input type="checkbox" id="privacyConsent" name="privacyConsent" required>
-                    <label for="privacyConsent">
-                        Я согласен на <a href="privacy.html" target="_blank">обработку персональных данных</a> (152-ФЗ) *
-                    </label>
+                    <label for="privacyConsent" style="font-weight: normal; margin: 0;">Я согласен на <a href="privacy.html" target="_blank">обработку данных (152-ФЗ)</a> *</label>
                 </div>
-
                 <button type="submit" class="submit-btn">[ ЗАРЕГИСТРИРОВАТЬСЯ ]</button>
             </form>
-            <div class="modal-footer">
-                Уже есть профиль? <a href="#" id="toLogin">[ АВТОРИЗОВАТЬСЯ ]</a>
+            <div style="text-align: center; padding: 15px; border-top: 1px solid var(--border);">
+                Есть профиль? <a href="#" id="toLogin" style="color: var(--accent);">[ ВОЙТИ ]</a>
             </div>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: Профиль -->
     <div id="profileModal" class="modal hidden">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>НАСТРОЙКИ ПРОФИЛЯ</h3>
-                <button class="close-btn" data-close>[ X ]</button>
-            </div>
+            <div class="modal-header"><h3>ПРОФИЛЬ</h3><button class="close-btn" data-close>[ X ]</button></div>
             <form id="profileForm">
-                <label>ИДЕНТИФИКАТОР</label>
-                <input type="text" name="username" disabled style="opacity: 0.5;">
-                <label>EMAIL</label>
-                <input type="email" name="email" placeholder="mail@example.com">
-                <button type="submit" class="submit-btn">[ ОБНОВИТЬ ДАННЫЕ ]</button>
+                <label>ЛОГИН</label><input type="text" name="username" disabled style="opacity: 0.5;">
+                <label>EMAIL</label><input type="email" name="email">
+                <button type="submit" class="submit-btn">[ ОБНОВИТЬ ]</button>
             </form>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: Пользователи (Админ) -->
     <div id="usersModal" class="modal hidden">
         <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3>РЕЕСТР ПЕРСОНАЛА</h3>
-                <button class="close-btn" data-close>[ X ]</button>
-            </div>
+            <div class="modal-header"><h3>РЕЕСТР ПЕРСОНАЛА</h3><button class="close-btn" data-close>[ X ]</button></div>
             <div id="usersList" class="users-list"></div>
         </div>
     </div>
 
-    <!-- МОДАЛЬНОЕ ОКНО: Логи системы -->
     <div id="logsModal" class="modal hidden">
         <div class="modal-content" style="max-width: 900px;">
-            <div class="modal-header">
-                <h3>ЖУРНАЛ ДОСТУПА И ОПЕРАЦИЙ</h3>
-                <button class="close-btn" data-close>[ X ]</button>
-            </div>
-
+            <div class="modal-header"><h3>ЖУРНАЛ ОПЕРАЦИЙ</h3><button class="close-btn" data-close>[ X ]</button></div>
             <div class="log-filters">
                 <input type="text" id="logFilterUser" placeholder="Пользователь" class="hidden">
-                <select id="logFilterAction">
-                    <option value="">Все действия</option>
-                </select>
+                <select id="logFilterAction"><option value="">Все действия</option></select>
                 <input type="date" id="logFilterFrom">
                 <input type="date" id="logFilterTo">
                 <button id="logApplyBtn" class="btn">[ ФИЛЬТР ]</button>
                 <button id="logResetBtn" class="btn ghost">[ СБРОС ]</button>
                 <button id="logExportBtn" class="btn">[ CSV ]</button>
             </div>
-
-            <div class="log-total" id="logTotal"></div>
+            <div class="log-total" id="logTotal" style="padding: 10px 20px; font-size: 0.85rem;"></div>
             <div id="logsList" class="logs-list"></div>
-            <button id="logMoreBtn" class="btn ghost hidden" style="width: calc(100% - 40px); margin: 10px auto;">[ ЗАГРУЗИТЬ ЕЩЕ ]</button>
+            <button id="logMoreBtn" class="btn ghost hidden" style="margin: 20px;">[ ЗАГРУЗИТЬ ЕЩЕ ]</button>
         </div>
     </div>
 
     <footer>
         <div>METRO_DICT_SYS v2.0 // 2033</div>
-        <div><a href="privacy.html">ПРОТОКОЛ_БЕЗОПАСНОСТИ</a></div>
+        <div><a href="privacy.html" style="color: var(--accent);">ПРОТОКОЛ_БЕЗОПАСНОСТИ</a></div>
     </footer>
 
     <script src="app.js"></script>
