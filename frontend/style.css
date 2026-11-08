@@ -152,5 +152,36 @@ form textarea { resize: vertical; min-height: 100px; }
 .user-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid var(--border); }
 .user-name { color: var(--text-bright); font-weight: bold; font-size: 1.1rem; }
 
-footer { display: flex; justify-content: space-between; padding: 20px 30px; background: var(--panel); border-top: 2px solid var(--border); font-size: 0.8rem; margin-top: auto; color: #777; }
-footer a { color: var(--accent); text-decoration: none; }
+footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 30px;
+    background: var(--panel);
+    border-top: 2px solid var(--border);
+    font-size: 0.85rem;
+    margin-top: auto;
+    color: #777;
+    /* ДОБАВЛЕНО: отступ справа, чтобы плавающие кнопки не перекрывали ссылку на ПК */
+    padding-right: 320px;
+}
+
+/* На мобильных устройствах убираем отступ, так как кнопки будут сверху */
+@media (max-width: 768px) {
+    footer {
+        padding-right: 30px;
+        padding-bottom: 120px; /* Место под кнопки на телефонах */
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+footer a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--accent);
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+footer a:hover { color: var(--text-bright); border-color: var(--text-bright); }
