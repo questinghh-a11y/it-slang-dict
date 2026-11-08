@@ -295,7 +295,6 @@ async function submitLogin(e) {
 async function submitRegister(e) {
   e.preventDefault(); const f = e.target;
 
-  // Проверка 152-ФЗ
   if (!f.privacyConsent.checked) { toast("ТРЕБУЕТСЯ СОГЛАСИЕ (152-ФЗ)", "error"); return; }
 
   try {
@@ -419,6 +418,15 @@ async function openUsers() {
 // --- СОБЫТИЯ ---
 let searchTimer;
 searchInput.addEventListener("input", (e) => {
+  // ==========================================
+  // ПАСХАЛКА "КТО ТЫ СТАЛКЕР" (Викторович)
+  // ==========================================
+  if (e.target.value.trim().toLowerCase() === "викторович") {
+    e.target.value = "";
+    triggerStalkerEgg();
+    return;
+  }
+
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     state.search = e.target.value.trim();
@@ -451,7 +459,7 @@ document.querySelectorAll(".modal").forEach(m => m.addEventListener("click", (e)
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
 
 // ==========================================
-// ПАСХАЛКА METRO 2033
+// ПАСХАЛКА 1: "ФОНАРИК" (Клик по зеленой точке)
 // ==========================================
 let dotClicks = 0;
 let dotTimer;
@@ -462,24 +470,15 @@ if (statusDot) {
     statusDot.addEventListener("click", () => {
         dotClicks++;
         clearTimeout(dotTimer);
-
-        // Сброс, если не кликать 1.5 секунды
         dotTimer = setTimeout(() => { dotClicks = 0; }, 1500);
 
         if (dotClicks === 5) {
             dotClicks = 0;
-
-            // 1. Тревожный красный
             statusDot.style.background = "#a83232";
             statusDot.style.boxShadow = "0 0 20px #a83232";
-
-            // 2. Сообщение
             toast("ВНИМАНИЕ: ОБНАРУЖЕНА АНОМАЛИЯ. НАДЕНЬТЕ ПРОТИВОГАЗ.", "error", 4000);
-
-            // 3. Включаем светлую тему
             document.documentElement.setAttribute("data-theme", "light");
 
-            // 4. Через 3 секунды выключаем
             setTimeout(() => {
                 document.documentElement.removeAttribute("data-theme");
                 statusDot.style.background = "#4af626";
@@ -488,6 +487,38 @@ if (statusDot) {
             }, 3000);
         }
     });
+}
+
+// ==========================================
+// ПАСХАЛКА 2: "КТО ТЫ СТАЛКЕР" (Ввод в поиск)
+// ==========================================
+function triggerStalkerEgg() {
+    const overlay = document.getElementById("stalkerOverlay");
+    const textEl = document.getElementById("stalkerText");
+    const phrase = "КТО ТЫ СТАЛКЕР?";
+
+    overlay.classList.remove("hidden");
+    textEl.textContent = "";
+
+    let i = 0;
+    const typeInterval = setInterval(() => {
+        textEl.textContent += phrase[i];
+        i++;
+        if (i >= phrase.length) {
+            clearInterval(typeInterval);
+        }
+    }, 120);
+
+    setTimeout(() => {
+        overlay.style.transition = "opacity 1s";
+        overlay.style.opacity = "0";
+        setTimeout(() => {
+            overlay.classList.add("hidden");
+            overlay.style.opacity = "1";
+            overlay.style.transition = "";
+            textEl.textContent = "";
+        }, 1000);
+    }, 4000);
 }
 
 // Секретное сообщение в консоль

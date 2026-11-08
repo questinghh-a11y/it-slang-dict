@@ -145,16 +145,9 @@ form textarea { resize: vertical; min-height: 100px; }
 
 /* ИСПРАВЛЕННЫЙ ПОДВАЛ */
 footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 30px;
-    background: var(--panel);
-    border-top: 2px solid var(--border);
-    font-size: 0.85rem;
-    margin-top: auto;
-    color: #777;
-    padding-right: 350px; /* Отступ, чтобы кнопки не перекрывали текст */
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 30px; background: var(--panel); border-top: 2px solid var(--border);
+    font-size: 0.85rem; margin-top: auto; color: #777; padding-right: 350px;
 }
 
 @media (max-width: 768px) {
@@ -162,10 +155,45 @@ footer {
 }
 
 footer a {
-    color: var(--accent);
-    text-decoration: none;
-    border-bottom: 1px dashed var(--accent);
-    font-weight: bold;
-    font-size: 0.9rem;
+    color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent);
+    font-weight: bold; font-size: 0.9rem;
 }
 footer a:hover { color: var(--text-bright); border-color: var(--text-bright); }
+
+/* ==========================================
+   ПАСХАЛКА "КТО ТЫ СТАЛКЕР"
+   ========================================== */
+.stalker-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: #000;
+    z-index: 99999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: flickerIn 0.3s ease-out;
+}
+
+.stalker-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: clamp(2rem, 8vw, 6rem);
+    color: #c87a36;
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    font-weight: bold;
+    text-shadow: 0 0 20px rgba(200, 122, 54, 0.8);
+    animation: textFlicker 0.15s infinite alternate;
+    text-align: center;
+    padding: 20px;
+}
+
+@keyframes flickerIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes textFlicker {
+    0% { opacity: 1; text-shadow: 0 0 20px rgba(200, 122, 54, 0.9); }
+    50% { opacity: 0.85; text-shadow: 0 0 10px rgba(200, 122, 54, 0.5); }
+    100% { opacity: 1; text-shadow: 0 0 25px rgba(200, 122, 54, 1); }
+}

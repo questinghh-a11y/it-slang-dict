@@ -18,11 +18,12 @@
 
     <header>
         <div class="logo">
-            <!-- Сюда добавлен ID для пасхалки -->
+            <!-- ID для пасхалки с фонариком -->
             <span class="status-dot" id="statusDot" title="Не нажимай..."></span> METRO_DICT_SYS // T_DB
         </div>
 
         <div class="controls">
+            <!-- ID для пасхалки с Викторовичем -->
             <input type="text" id="search" placeholder="> ВВЕДИТЕ ЗАПРОС...">
             <button id="themeToggle">[ СВЕТ ]</button>
         </div>
@@ -173,7 +174,11 @@
         </div>
     </div>
 
-    <!-- ИСПРАВЛЕННЫЙ ПОДВАЛ -->
+    <!-- СКРЫТЫЙ СЛОЙ ДЛЯ ПАСХАЛКИ "КТО ТЫ СТАЛКЕР" -->
+    <div id="stalkerOverlay" class="stalker-overlay hidden">
+        <div class="stalker-text" id="stalkerText"></div>
+    </div>
+
     <footer>
         <div>METRO_DICT_SYS v2.0 // 2033</div>
         <div>
